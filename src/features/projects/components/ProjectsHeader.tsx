@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { Zap, LogOut } from "lucide-react";
-import { User, Settings, Sun, Bell, Shield } from "lucide-react";
+import { Zap, LogOut, Settings, Sun, Bell, Shield } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -65,16 +64,9 @@ export function ProjectsHeader() {
 
         {/* User actions */}
         <div className="flex items-center gap-3" style={{ position: "relative" }} ref={menuRef}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <button aria-label="Open account menu" onClick={toggle} style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #3B82F6, #8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", fontWeight: 700, boxShadow: "0 6px 18px rgba(59,130,246,0.18)", border: open ? "2px solid rgba(255,255,255,0.85)" : "2px solid rgba(255,255,255,0.15)" }}>
-              {initials}
-            </button>
-            <div style={{ fontSize: 13, color: "#0F172A", textAlign: "center", lineHeight: "1.05" }}>
-              <div style={{ fontWeight: 700 }}>{displayName}</div>
-              <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{plan}</div>
-              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 6 }}>{`Credits: ${credits} · ${expiry}`}</div>
-            </div>
-          </div>
+          <button aria-label="Open account menu" onClick={toggle} style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #3B82F6, #8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", fontWeight: 700, boxShadow: "0 6px 18px rgba(59,130,246,0.18)", border: open ? "2px solid rgba(255,255,255,0.85)" : "2px solid rgba(255,255,255,0.15)" }}>
+            {initials}
+          </button>
 
           {/* Staged dropdown */}
           <div style={{ position: "absolute", right: 0, top: 78, width: 260, pointerEvents: open ? "auto" : "none", zIndex: 60 }}>
