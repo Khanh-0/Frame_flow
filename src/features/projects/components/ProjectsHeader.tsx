@@ -1,7 +1,49 @@
-import { Link } from "react-router";
-import { Zap, User, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { Zap, LogOut } from "lucide-react";
+import { User, Settings, Sun, Bell, Shield } from "lucide-react";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function ProjectsHeader() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/signin");
+  };
+
+  const displayName = user?.fullName ?? user?.email ?? "User";
+  const initials = displayName ? displayName[0].toUpperCase() : "U";
+
+  // try local profile fallback (created by UserSettingsPage)
+  const profileKey = user?.id ? `profile_${user.id}` : null;
+  let localProfile: any = null;
+  if (typeof window !== "undefined" && profileKey) {
+    try {
+      localProfile = JSON.parse(localStorage.getItem(profileKey) || "null");
+    } catch (e) {
+      localProfile = null;
+    }
+  }
+  const credits = localProfile?.credits ?? 124;
+  const expiry = localProfile?.subscription ?? "Expires: 28 May 2026";
+  const plan = localProfile?.plan ?? "Free Plan";
+
+  const toggle = useCallback(() => setOpen((v) => !v), []);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current) return;
+      if (!(e.target instanceof Node)) return;
+      if (!menuRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, []);
+
   return (
     <header
       style={{
@@ -22,18 +64,50 @@ export function ProjectsHeader() {
         </Link>
 
         {/* User actions */}
-        <div className="flex items-center gap-3">
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg, #3B82F6, #8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <User size={15} color="white" />
+        <div className="flex items-center gap-3" style={{ position: "relative" }} ref={menuRef}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <button aria-label="Open account menu" onClick={toggle} style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #3B82F6, #8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", fontWeight: 700, boxShadow: "0 6px 18px rgba(59,130,246,0.18)", border: open ? "2px solid rgba(255,255,255,0.85)" : "2px solid rgba(255,255,255,0.15)" }}>
+              {initials}
+            </button>
+            <div style={{ fontSize: 13, color: "#0F172A", textAlign: "center", lineHeight: "1.05" }}>
+              <div style={{ fontWeight: 700 }}>{displayName}</div>
+              <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{plan}</div>
+              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 6 }}>{`Credits: ${credits} · ${expiry}`}</div>
+            </div>
           </div>
-          <Link
-            to="/signin"
-            className="flex items-center gap-1.5"
-            style={{ fontSize: 13, color: "#64748B", textDecoration: "none", padding: "6px 10px", borderRadius: 8, border: "1px solid #E2E8F0" }}
-          >
-            <LogOut size={13} />
-            Sign out
-          </Link>
+
+          {/* Staged dropdown */}
+          <div style={{ position: "absolute", right: 0, top: 78, width: 260, pointerEvents: open ? "auto" : "none", zIndex: 60 }}>
+            <div style={{ background: "white", borderRadius: 12, boxShadow: "0 10px 30px rgba(2,6,23,0.12)", overflow: "hidden", transformOrigin: "top right", opacity: open ? 1 : 0, transform: open ? "translateY(0) scale(1)" : "translateY(-8px) scale(0.98)", transition: "opacity 220ms cubic-bezier(.2,.9,.2,1), transform 220ms cubic-bezier(.2,.9,.2,1)" }}>
+              <div style={{ padding: 14, borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "linear-gradient(135deg, #3B82F6, #8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700 }}>{initials}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: "#0F172A" }}>{displayName}</div>
+                  <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>{plan} · Credits {credits}</div>
+                </div>
+                <div style={{ fontSize: 12, color: "#94A3B8" }}>{expiry}</div>
+              </div>
+
+              {[
+                { key: "account", label: "Account Settings", icon: Settings, onClick: () => navigate("/settings") },
+                { key: "appearance", label: "Appearance", icon: Sun, onClick: () => navigate("/settings#appearance") },
+                { key: "notifications", label: "Notifications", icon: Bell, onClick: () => navigate("/settings#notifications") },
+                { key: "security", label: "Security", icon: Shield, onClick: () => navigate("/settings#security") },
+              ].map((item, idx) => (
+                <div key={item.key} onClick={item.onClick} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #F8FAFC", background: "white", transition: "background 120ms ease" }} onMouseEnter={(e) => (e.currentTarget.style.background = "#F8FAFC")} onMouseLeave={(e) => (e.currentTarget.style.background = "white")}>
+                  <item.icon size={16} color="#64748B" />
+                  <div style={{ fontSize: 14, color: "#0F172A" }}>{item.label}</div>
+                </div>
+              ))}
+
+              <div style={{ padding: "10px 14px", display: "flex", gap: 8 }}>
+                <button onClick={() => navigate("/settings#profile") } style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid #E6EEF8", background: "white", cursor: "pointer" }}>Profile</button>
+                <button onClick={handleSignOut} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "none", background: "#3B82F6", color: "white", cursor: "pointer" }}>
+                  <LogOut size={14} style={{ marginRight: 8 }} />Sign out
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
