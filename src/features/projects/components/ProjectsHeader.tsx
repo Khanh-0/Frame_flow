@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { Zap, LogOut, Settings, Sun, Bell, Shield } from "lucide-react";
+import { Zap, LogOut, Settings, Sun, Bell, Shield, CreditCard } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -82,6 +82,7 @@ export function ProjectsHeader() {
 
               {[
                 { key: "account", label: "Account Settings", icon: Settings, onClick: () => navigate("/settings") },
+                { key: "billing", label: "Billing", icon: CreditCard, onClick: () => navigate("/payment") },
                 { key: "appearance", label: "Appearance", icon: Sun, onClick: () => navigate("/settings#appearance") },
                 { key: "notifications", label: "Notifications", icon: Bell, onClick: () => navigate("/settings#notifications") },
                 { key: "security", label: "Security", icon: Shield, onClick: () => navigate("/settings#security") },

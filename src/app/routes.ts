@@ -6,5 +6,9 @@ export const ROUTES = {
   projects:  "/projects",
   dashboard: "/dashboard",
   signIn:    "/signin",
-  signUp:    "/signup",
+  signUp:         "/signup",
+  settings:       "/settings",
+  payment:        "/payment",
+  paymentSuccess: "/payment/success",
+  paymentCancel:  "/payment/cancel",
 } as const;

@@ -22,6 +22,22 @@ import {
 } from "@/features/auth/SignUpPage";
 
 import {
+  UserSettingsPage,
+} from "@/features/auth/UserSettingsPage";
+
+import {
+  PaymentPage,
+} from "@/features/payment/pages/PaymentPage";
+
+import {
+  SuccessPage,
+} from "@/features/payment/pages/SuccessPage";
+
+import {
+  CancelPage,
+} from "@/features/payment/pages/CancelPage";
+
+import {
   AdminPage,
 } from "@/features/admin/AdminPage";
 
@@ -67,6 +83,34 @@ const router = createBrowserRouter([
       {
         path: "signup",
         Component: SignUpPage,
+      },
+
+      {
+        path: "payment",
+        element: (
+          <AuthGuard>
+            <PaymentPage />
+          </AuthGuard>
+        ),
+      },
+
+      {
+        path: "payment/success",
+        Component: SuccessPage,
+      },
+
+      {
+        path: "payment/cancel",
+        Component: CancelPage,
+      },
+
+      {
+        path: "settings",
+        element: (
+          <AuthGuard>
+            <UserSettingsPage />
+          </AuthGuard>
+        ),
       },
 
       {
