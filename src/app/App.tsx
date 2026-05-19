@@ -10,6 +10,10 @@ import {
 } from "@/features/projects/ProjectsPage";
 
 import {
+  UserSettingsPage,
+} from "@/features/auth/UserSettingsPage";
+
+import {
   Dashboard,
 } from "@/features/dashboard/DashboardPage";
 
@@ -45,6 +49,14 @@ const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <ProjectsPage />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <AuthGuard>
+            <UserSettingsPage />
           </AuthGuard>
         ),
       },

@@ -3,18 +3,14 @@ import type { Tool, BlendMode } from "../types";
 import { hexToRgb, rgbToHex } from "../utils/colorUtils";
 
 export interface PaintCanvasHandle {
-  /** Composite đầy đủ (colorRef + bgRef + canvasRef) — dùng để export/download */
+  /** Returns a merged canvas (colorRef + bgRef + canvasRef) as a Blob */
   getFlattenedBlob: () => Promise<Blob | null>;
-  /** Chỉ paint layer (colorRef + canvasRef, KHÔNG có bgRef) — dùng để lưu DB và restore */
-  getPaintOnlyBlob: () => Promise<Blob | null>;
-  /** Chỉ paint layer dưới dạng dataUrl — dùng cho undo snapshot và session cache */
+  /** Returns the merged result as a dataURL string (for undo snapshots) */
   getFlattenedDataUrl: () => string | null;
 }
 
 interface PaintCanvasProps {
   imageUrl: string | null;
-  /** Ảnh đã merge từ lần save trước (từ Supabase). Khi có, load vào bgRef thay imageUrl. */
-  paintUrl?: string | null;
   tool: Tool;
   color: string;
   brushSize: number;
@@ -32,7 +28,6 @@ interface PaintCanvasProps {
 
 export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(function PaintCanvas({
   imageUrl,
-  paintUrl,
   tool,
   color,
   brushSize,
@@ -57,54 +52,41 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
   const paintTarget = (): HTMLCanvasElement =>
     lockLineArt ? colorRef.current! : canvasRef.current!;
 
-  // ── Expose canvas handles to parent ───────────────────────────────────────
-  useImperativeHandle(ref, () => {
-    // Helper: merge colorRef + bgRef + canvasRef thành một canvas tạm
-    const merged = () => {
+  // ── Expose flattened canvas to parent ─────────────────────────────────────
+  useImperativeHandle(ref, () => ({
+    getFlattenedBlob: () =>
+      new Promise<Blob | null>((resolve) => {
+        const bg = bgRef.current;
+        if (!bg) return resolve(null);
+        const tmp = document.createElement("canvas");
+        tmp.width = bg.width;
+        tmp.height = bg.height;
+        const ctx = tmp.getContext("2d")!;
+        if (colorRef.current) ctx.drawImage(colorRef.current, 0, 0);
+        ctx.drawImage(bg, 0, 0);
+        if (canvasRef.current) ctx.drawImage(canvasRef.current, 0, 0);
+        tmp.toBlob(resolve, "image/png");
+      }),
+    getFlattenedDataUrl: () => {
       const bg = bgRef.current;
       if (!bg) return null;
       const tmp = document.createElement("canvas");
       tmp.width = bg.width;
       tmp.height = bg.height;
       const ctx = tmp.getContext("2d")!;
-      // Thứ tự: color layer → background (line art) → paint layer
       if (colorRef.current) ctx.drawImage(colorRef.current, 0, 0);
       ctx.drawImage(bg, 0, 0);
       if (canvasRef.current) ctx.drawImage(canvasRef.current, 0, 0);
-      return tmp;
-    };
-
-    return {
-      // Dùng để upload Supabase (ảnh merge đầy đủ)
-      getFlattenedBlob: () =>
-        new Promise<Blob | null>((resolve) => {
-          const tmp = merged();
-          if (!tmp) return resolve(null);
-          tmp.toBlob(resolve, "image/jpeg", 0.92);
-        }),
-      // Alias — giữ tương thích với useDashboard
-      getPaintOnlyBlob: () =>
-        new Promise<Blob | null>((resolve) => {
-          const tmp = merged();
-          if (!tmp) return resolve(null);
-          tmp.toBlob(resolve, "image/jpeg", 0.92);
-        }),
-      // Dùng cho undo snapshot và session cache
-      getFlattenedDataUrl: () => merged()?.toDataURL("image/jpeg", 0.92) ?? null,
-    };
-  }, [lockLineArt]);
+      return tmp.toDataURL();
+    },
+  }), [lockLineArt]);
 
   // ── Load background image ──────────────────────────────────────────────────
   useEffect(() => {
     const cv = bgRef.current;
     if (!cv) return;
     const ctx = cv.getContext("2d")!;
-
-    // Nếu có paintUrl (ảnh đã merge từ lần save) → dùng nó làm background
-    // Nếu không → dùng imageUrl (line art gốc)
-    const srcUrl = paintUrl && paintUrl.length > 0 ? paintUrl : imageUrl;
-
-    if (!srcUrl) {
+    if (!imageUrl) {
       ctx.fillStyle = "#1E293B";
       ctx.fillRect(0, 0, cv.width || 800, cv.height || 600);
       return;
@@ -112,31 +94,22 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const W = img.naturalWidth;
-      const H = img.naturalHeight;
-
+      const W = img.naturalWidth,
+        H = img.naturalHeight;
       cv.width = W;
       cv.height = H;
-
       if (canvasRef.current) {
         canvasRef.current.width = W;
         canvasRef.current.height = H;
-        const paintCtx = canvasRef.current.getContext("2d");
-        paintCtx?.clearRect(0, 0, W, H);
       }
-
       if (colorRef.current) {
         colorRef.current.width = W;
         colorRef.current.height = H;
-        const colorCtx = colorRef.current.getContext("2d");
-        colorCtx?.clearRect(0, 0, W, H);
       }
-
-      ctx.clearRect(0, 0, W, H);
       ctx.drawImage(img, 0, 0);
     };
-    img.src = srcUrl;
-  }, [imageUrl, paintUrl]);
+    img.src = imageUrl;
+  }, [imageUrl]);
 
   // ── Coordinate mapping ─────────────────────────────────────────────────────
   const getPos = (e: React.MouseEvent) => {

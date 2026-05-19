@@ -23,6 +23,8 @@ function mapUser(raw: import("@supabase/supabase-js").User): AuthUser {
   return {
     id:             raw.id,
     email:          raw.email,
+    fullName:       // try multiple metadata keys
+                    (raw.user_metadata as any)?.full_name || (raw.user_metadata as any)?.fullName || (raw.user_metadata as any)?.name || undefined,
     emailConfirmed: !!raw.email_confirmed_at,
     createdAt:      raw.created_at,
   };
@@ -79,4 +81,12 @@ export function onAuthStateChange(
 
   // Return unsubscribe function
   return () => subscription.unsubscribe();
+}
+
+/** Update user metadata (profile) */
+export async function updateProfile(metadata: Record<string, any>): Promise<AuthResult> {
+  const { error } = await supabase.auth.updateUser({ data: metadata });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }

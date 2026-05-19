@@ -24,6 +24,7 @@ interface AuthContextValue {
   signIn:  (credentials: SignInCredentials) => Promise<AuthResult>;
   signUp:  (credentials: SignUpCredentials) => Promise<AuthResult>;
   signOut: () => Promise<void>;
+  updateProfile: (metadata: Record<string, any>) => Promise<AuthResult>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -78,6 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // user state sẽ tự set null qua onAuthStateChange
   }, []);
 
+  const updateProfile = useCallback(async (metadata: Record<string, any>): Promise<AuthResult> => {
+    return authApi.updateProfile(metadata);
+  }, []);
+
   // ─── Value ────────────────────────────────────────────────────────────────
 
   const value: AuthContextValue = {
@@ -86,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
+    updateProfile,
   };
 
   return (
