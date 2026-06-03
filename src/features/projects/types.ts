@@ -1,7 +1,7 @@
 export type ProjectStatus = "in-progress" | "complete" | "draft";
 
 export interface Project {
-  id: number;
+  id: string;
   name: string;
   frames: number;
   coloredFrames: number;

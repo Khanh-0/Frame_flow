@@ -36,31 +36,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true); // true khi đang restore session ban đầu
   const mounted = useRef(true);
 
-  // Restore session khi app load lần đầu + subscribe changes
-  useEffect(() => {
-    mounted.current = true;
+   // Restore session khi app load lần đầu + subscribe changes
+   useEffect(() => {
+     mounted.current = true;
+     let unsubscribe: (() => void) | null = null;
 
-    // 1. Restore existing session
-    authApi.getSession().then((existingUser) => {
+    (async () => {
+      console.log('[AuthProvider] Restoring session...');
+      // 1. Restore existing session
+      const existingUser = await authApi.getSession();
+      console.log('[AuthProvider] Session restored:', existingUser?.email);
+      
       if (mounted.current) {
         setUser(existingUser);
         setLoading(false);
+        console.log('[AuthProvider] Loading set to false');
       }
-    });
 
-    // 2. Subscribe to future auth changes (login / logout / token refresh)
-    const unsubscribe = authApi.onAuthStateChange((updatedUser) => {
+      // 2. Subscribe to future auth changes (login / logout / token refresh)
+      // Only subscribe after initial session check
       if (mounted.current) {
-        setUser(updatedUser);
-        setLoading(false);
+        console.log('[AuthProvider] Setting up onAuthStateChange subscription');
+        unsubscribe = authApi.onAuthStateChange((updatedUser) => {
+          console.log('[AuthProvider] onAuthStateChange callback triggered:', updatedUser?.email);
+          if (mounted.current) {
+            setUser(updatedUser);
+          }
+        });
       }
-    });
+    })();
 
-    return () => {
-      mounted.current = false;
-      unsubscribe();
-    };
-  }, []);
+     return () => {
+       mounted.current = false;
+       if (unsubscribe) unsubscribe();
+     };
+   }, []);
 
   // ─── Actions ──────────────────────────────────────────────────────────────
 

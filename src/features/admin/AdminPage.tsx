@@ -1,406 +1,685 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+// src/features/admin/AdminPage.tsx
+//
+// Admin dashboard for managing users, credits, and roles.
+// Only accessible to users with role === 'admin'.
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import {
-  Zap, Users, FolderOpen, Cpu, TrendingUp, LogOut,
-  ToggleLeft, ToggleRight, AlertTriangle, Activity,
-  Download, Trash2, Shield, DollarSign, Server,
-  CreditCard, TrendingDown, Gauge,
+  Users, CreditCard, LogOut, ArrowLeft, Search, Trash2, Edit2,
+  ChevronDown, Loader2, AlertCircle, CheckCircle, Zap,
 } from "lucide-react";
+import { useAuth } from "../auth/hooks/useAuth";
+import {
+  getAllUsers,
+  getUserDetails,
+  addCreditsToUser,
+  updateUserRole,
+  deleteUser,
+  getAuditLogs,
+  getTotalUserCount,
+  getTotalCreditsDistributed,
+  getActiveUsersThisMonth,
+  type AdminUser,
+  type AuditLog,
+} from "./services/admin.api";
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-const STATS = [
-  { label: "Total Users",       value: "1,284", delta: "+12%", positive: true,  icon: Users,      color: "#3B82F6", bg: "#EFF6FF" },
-  { label: "Active Projects",   value: "3,921", delta: "+8%",  positive: true,  icon: FolderOpen, color: "#8B5CF6", bg: "#F5F3FF" },
-  { label: "AI Frames Colored", value: "482K",  delta: "+31%", positive: true,  icon: Cpu,        color: "#10B981", bg: "#ECFDF5" },
-  { label: "Exports This Week", value: "9,104", delta: "-3%",  positive: false, icon: Download,   color: "#F59E0B", bg: "#FFFBEB" },
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const RECENT_USERS = [
-  { id: 1, name: "Nguyen Van A", email: "vana@gmail.com",   plan: "Pro",  projects: 12, joined: "2 days ago",  status: "active" },
-  { id: 2, name: "Tran Thi B",  email: "thib@gmail.com",   plan: "Free", projects: 3,  joined: "5 days ago",  status: "active" },
-  { id: 3, name: "Le Van C",    email: "vanc@outlook.com", plan: "Pro",  projects: 8,  joined: "1 week ago",  status: "active" },
-  { id: 4, name: "Pham Thi D",  email: "thid@yahoo.com",   plan: "Free", projects: 1,  joined: "2 weeks ago", status: "suspended" },
-  { id: 5, name: "Hoang Van E", email: "vane@gmail.com",   plan: "Pro",  projects: 20, joined: "1 month ago", status: "active" },
-];
+type AdminTab = "users" | "credits" | "audit";
 
-const INITIAL_FEATURES = [
-  { id: "ai_coloring",     label: "AI Auto Coloring",       description: "Batch AI colorization for all frames",      enabled: true  },
-  { id: "mp4_export",      label: "MP4 Export",             description: "Export animation as MP4 video file",        enabled: true  },
-  { id: "manual_brush",    label: "Manual Brush Tools",     description: "Full brush/pencil/eraser toolset",          enabled: true  },
-  { id: "reference_modal", label: "Reference Image Upload", description: "Upload colored reference for AI guidance",  enabled: true  },
-  { id: "lock_lineart",    label: "Lock Line Art",          description: "Prevent painting over outlines",            enabled: true  },
-  { id: "color_propagate", label: "Color Propagation",      description: "Propagate colors across frame sequence",    enabled: false },
-  { id: "pro_export",      label: "1080p Pro Export",       description: "High-res export for Pro plan users only",   enabled: true  },
-  { id: "signup",          label: "New User Registration",  description: "Allow new accounts to be created",          enabled: true  },
-];
+// ─── Shared Styles ────────────────────────────────────────────────────────────
 
-// ── Revenue data ───────────────────────────────────────────────────────────────
-const MONTHLY_REVENUE = [
-  { month: "Oct", revenue: 4200, cost: 2100, proUsers: 210 },
-  { month: "Nov", revenue: 5100, cost: 2400, proUsers: 255 },
-  { month: "Dec", revenue: 6800, cost: 2900, proUsers: 340 },
-  { month: "Jan", revenue: 7200, cost: 3100, proUsers: 360 },
-  { month: "Feb", revenue: 8400, cost: 3400, proUsers: 420 },
-  { month: "Mar", revenue: 9600, cost: 3700, proUsers: 480 },
-];
+const S = {
+  card: {
+    background: "white",
+    border: "1px solid #E8EFFE",
+    borderRadius: 12,
+    padding: "16px",
+    marginBottom: 16,
+  } as React.CSSProperties,
+  input: {
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "1.5px solid #E2E8F0",
+    fontSize: 14,
+    outline: "none",
+    fontFamily: "'DM Sans', sans-serif",
+  } as React.CSSProperties,
+  button: {
+    padding: "8px 16px",
+    borderRadius: 8,
+    border: "none",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "'DM Sans', sans-serif",
+  } as React.CSSProperties,
+};
 
-const CUR  = MONTHLY_REVENUE[MONTHLY_REVENUE.length - 1];
-const PREV = MONTHLY_REVENUE[MONTHLY_REVENUE.length - 2];
-const MAX_CHART = Math.max(...MONTHLY_REVENUE.map((m) => m.revenue));
+// ─── User Management Tab ───────────────────────────────────────────────────────
 
-const REVENUE_STATS = [
-  { label: "Monthly Revenue",   value: `$${CUR.revenue.toLocaleString()}`, delta: `+${Math.round(((CUR.revenue - PREV.revenue) / PREV.revenue) * 100)}% vs last month`, positive: true,  icon: DollarSign, color: "#10B981", bg: "#ECFDF5" },
-  { label: "Pro Subscribers",   value: `${CUR.proUsers}`,                  delta: `+${CUR.proUsers - PREV.proUsers} this month`,                                         positive: true,  icon: CreditCard, color: "#3B82F6", bg: "#EFF6FF" },
-  { label: "AI Server Cost",    value: `$${CUR.cost.toLocaleString()}`,    delta: `+${Math.round(((CUR.cost - PREV.cost) / PREV.cost) * 100)}% vs last month`,           positive: false, icon: Server,     color: "#F59E0B", bg: "#FFFBEB" },
-  { label: "Net Profit",        value: `$${(CUR.revenue - CUR.cost).toLocaleString()}`, delta: `${Math.round(((CUR.revenue - CUR.cost) / CUR.revenue) * 100)}% margin`, positive: true,  icon: TrendingUp, color: "#8B5CF6", bg: "#F5F3FF" },
-];
+interface UserRowProps {
+  user: AdminUser;
+  adminId: string;
+  onRefresh: () => void;
+}
 
-const SERVER_COSTS = [
-  { label: "GPU Cluster (AI Coloring)",   cost: 1840, usage: 78, color: "#3B82F6", desc: "4× NVIDIA A100 — batch frame colorization" },
-  { label: "GPU Burst (Single Frame AI)", cost: 620,  usage: 45, color: "#8B5CF6", desc: "On-demand GPU for single-frame AI requests" },
-  { label: "Storage (Frame Assets)",      cost: 480,  usage: 62, color: "#10B981", desc: "S3-compatible object storage for PNG sequences" },
-  { label: "CDN (Export Delivery)",       cost: 290,  usage: 55, color: "#F59E0B", desc: "Global CDN for MP4 and PNG export downloads" },
-  { label: "Compute (API + Web)",         cost: 340,  usage: 38, color: "#06B6D4", desc: "App server, API backend, background workers" },
-  { label: "Database",                    cost: 130,  usage: 29, color: "#EC4899", desc: "PostgreSQL — users, projects, frame metadata" },
-];
+function UserRow({ user, adminId, onRefresh }: UserRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [newRole, setNewRole] = useState(user.role);
+  const [creditsAmount, setCreditsAmount] = useState("");
+  const [creditsReason, setCreditsReason] = useState("");
+  const [addingCredits, setAddingCredits] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-// ── Component ──────────────────────────────────────────────────────────────────
-export function AdminPage() {
-  const navigate = useNavigate();
-  const [features, setFeatures]     = useState(INITIAL_FEATURES);
-  const [activeTab, setActiveTab]   = useState<"overview" | "users" | "features" | "revenue">("overview");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  const toggleFeature = (id: string) =>
-    setFeatures((prev) => prev.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f)));
-
-  const handleDeleteUser = (id: number) => {
-    setDeletingId(id);
-    setTimeout(() => setDeletingId(null), 1200);
+  const handleUpdateRole = async () => {
+    setSaving(true);
+    setError("");
+    const result = await updateUserRole(adminId, user.id, newRole);
+    setSaving(false);
+    if (result.success) {
+      setSuccess("Role updated!");
+      setTimeout(() => {
+        setSuccess("");
+        setEditing(false);
+        onRefresh();
+      }, 1500);
+    } else {
+      setError(result.error || "Failed to update role");
+    }
   };
 
-  const TAB = (tab: typeof activeTab) => ({
-    padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-    cursor: "pointer", border: "none", fontFamily: "'Inter', sans-serif",
-    background: activeTab === tab ? "#3B82F6" : "transparent",
-    color: activeTab === tab ? "white" : "#64748B",
-    transition: "all 0.15s",
-  });
+  const handleAddCredits = async () => {
+    if (!creditsAmount || !creditsReason) {
+      setError("Please fill in all fields");
+      return;
+    }
+    setAddingCredits(true);
+    setError("");
+    const result = await addCreditsToUser(adminId, user.id, parseInt(creditsAmount), creditsReason);
+    setAddingCredits(false);
+    if (result.success) {
+      setSuccess("Credits added!");
+      setCreditsAmount("");
+      setCreditsReason("");
+      setTimeout(() => {
+        setSuccess("");
+        onRefresh();
+      }, 1500);
+    } else {
+      setError(result.error || "Failed to add credits");
+    }
+  };
 
-  const CARD = { background: "white", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid #F1F5F9" };
+  const handleDelete = async () => {
+    if (!confirm(`Delete user ${user.email}? This action cannot be undone.`)) return;
+    setSaving(true);
+    setError("");
+    const result = await deleteUser(adminId, user.id);
+    setSaving(false);
+    if (result.success) {
+      setSuccess("User deleted!");
+      setTimeout(() => {
+        setSuccess("");
+        onRefresh();
+      }, 1500);
+    } else {
+      setError(result.error || "Failed to delete user");
+    }
+  };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFF", fontFamily: "'Inter', sans-serif" }}>
-
-      {/* Topbar */}
-      <div style={{ background: "white", borderBottom: "1px solid #E2E8F0", padding: "0 32px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
-        <div className="flex items-center gap-3">
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: "#1E293B", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Zap size={15} color="white" fill="white" />
+    <div style={{ ...S.card, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        {/* User Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#1E293B" }}>
+            {user.full_name || "No name"}
           </div>
-          <span style={{ fontWeight: 700, fontSize: 16, color: "#1E293B" }}>FrameFlow</span>
-          <div style={{ width: 1, height: 18, background: "#E2E8F0", margin: "0 4px" }} />
-          <div className="flex items-center gap-1.5" style={{ background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 6, padding: "3px 10px" }}>
-            <Shield size={12} color="#D97706" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#D97706" }}>Admin Panel</span>
+          <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>
+            {user.email}
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 8, fontSize: 12, color: "#475569" }}>
+            <span>
+              Credits: <strong style={{ color: "#3B82F6" }}>{user.credits}</strong>
+            </span>
+            <span>
+              Plan: <strong>{user.subscription_plan}</strong>
+            </span>
+            <span>
+              Role: <strong style={{ color: user.role === "admin" ? "#EF4444" : "#64748B" }}>
+                {user.role}
+              </strong>
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span style={{ fontSize: 13, color: "#64748B" }}>Logged in as <strong style={{ color: "#1E293B" }}>admin</strong></span>
-          <button onClick={() => navigate("/signin")} className="flex items-center gap-1.5" style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#EF4444", fontFamily: "'Inter', sans-serif" }}>
-            <LogOut size={13} /> Sign out
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={() => setEditing(!editing)}
+            style={{
+              ...S.button,
+              background: editing ? "#EFF6FF" : "#F3F4F6",
+              color: editing ? "#3B82F6" : "#6B7280",
+            }}
+          >
+            <Edit2 size={13} style={{ display: "inline-block" }} />
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={saving}
+            style={{
+              ...S.button,
+              background: "#FEE2E2",
+              color: "#DC2626",
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            <Trash2 size={13} style={{ display: "inline-block" }} />
           </button>
         </div>
       </div>
 
-      {/* Main */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 32px" }}>
-
-        {/* Header + Tabs */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1E293B", letterSpacing: "-0.5px", marginBottom: 4 }}>Admin Dashboard</h1>
-            <p style={{ fontSize: 14, color: "#64748B" }}>Manage users, features, revenue and platform activity.</p>
-          </div>
-          <div className="flex gap-2 flex-wrap justify-end">
-            {(["overview", "users", "features", "revenue"] as const).map((tab) => (
-              <button key={tab} style={TAB(tab)} onClick={() => setActiveTab(tab)}>
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+      {/* Edit/Add Credits Panel */}
+      {editing && (
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #F1F5F9" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            {/* Change Role */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
+                Role
+              </label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                style={{
+                  ...S.input,
+                  width: "100%",
+                }}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button
+                onClick={handleUpdateRole}
+                disabled={saving}
+                style={{
+                  ...S.button,
+                  background: "#3B82F6",
+                  color: "white",
+                  width: "100%",
+                  marginTop: 8,
+                  opacity: saving ? 0.6 : 1,
+                }}
+              >
+                {saving ? "Updating..." : "Update Role"}
               </button>
-            ))}
+            </div>
+
+            {/* Add Credits */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
+                Add Credits
+              </label>
+              <input
+                type="number"
+                value={creditsAmount}
+                onChange={(e) => setCreditsAmount(e.target.value)}
+                placeholder="Amount"
+                style={{ ...S.input, width: "100%", marginBottom: 6 }}
+              />
+              <input
+                type="text"
+                value={creditsReason}
+                onChange={(e) => setCreditsReason(e.target.value)}
+                placeholder="Reason"
+                style={{ ...S.input, width: "100%", marginBottom: 8 }}
+              />
+              <button
+                onClick={handleAddCredits}
+                disabled={addingCredits}
+                style={{
+                  ...S.button,
+                  background: "#10B981",
+                  color: "white",
+                  width: "100%",
+                  opacity: addingCredits ? 0.6 : 1,
+                }}
+              >
+                {addingCredits ? "Adding..." : "Add Credits"}
+              </button>
+            </div>
           </div>
+
+          {error && (
+            <div
+              style={{
+                fontSize: 13,
+                color: "#DC2626",
+                background: "#FEE2E2",
+                padding: "8px 12px",
+                borderRadius: 6,
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+              }}
+            >
+              <AlertCircle size={14} /> {error}
+            </div>
+          )}
+          {success && (
+            <div
+              style={{
+                fontSize: 13,
+                color: "#059669",
+                background: "#ECFDF5",
+                padding: "8px 12px",
+                borderRadius: 6,
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+              }}
+            >
+              <CheckCircle size={14} /> {success}
+            </div>
+          )}
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* ── OVERVIEW ── */}
-        {activeTab === "overview" && (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {STATS.map((s) => (
-                <div key={s.label} style={{ ...CARD, padding: "20px 22px" }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <s.icon size={18} color={s.color} />
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: s.positive ? "#ECFDF5" : "#FEF2F2", color: s.positive ? "#10B981" : "#EF4444" }}>{s.delta}</span>
-                  </div>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "#1E293B", marginBottom: 4 }}>{s.value}</div>
-                  <div style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div style={{ ...CARD, padding: 24 }}>
-                <div className="flex items-center gap-2 mb-5"><Activity size={16} color="#3B82F6" /><span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Recent Activity</span></div>
-                <div className="flex flex-col gap-3">
-                  {[
-                    { text: "New user registered",               time: "2 min ago",  color: "#10B981" },
-                    { text: "482 frames colored via AI",         time: "14 min ago", color: "#3B82F6" },
-                    { text: "Pro subscription activated",        time: "1 hr ago",   color: "#8B5CF6" },
-                    { text: "MP4 export completed (120 frames)", time: "2 hr ago",   color: "#F59E0B" },
-                    { text: "User account suspended",            time: "5 hr ago",   color: "#EF4444" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, color: "#475569" }}>{item.text}</span>
-                      </div>
-                      <span style={{ fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>{item.time}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div style={{ ...CARD, padding: 24 }}>
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2"><TrendingUp size={16} color="#8B5CF6" /><span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Feature Status</span></div>
-                  <button onClick={() => setActiveTab("features")} style={{ fontSize: 12, color: "#3B82F6", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Manage →</button>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {features.slice(0, 5).map((f) => (
-                    <div key={f.id} className="flex items-center justify-between">
-                      <span style={{ fontSize: 13, color: "#475569" }}>{f.label}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: f.enabled ? "#ECFDF5" : "#F1F5F9", color: f.enabled ? "#10B981" : "#94A3B8" }}>{f.enabled ? "ON" : "OFF"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+type UserFilter = "all" | "admins";
 
-        {/* ── USERS ── */}
-        {activeTab === "users" && (
-          <div style={{ ...CARD, overflow: "hidden" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 8 }}>
-              <Users size={16} color="#3B82F6" />
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Registered Users</span>
-              <span style={{ fontSize: 12, color: "#94A3B8", background: "#F1F5F9", borderRadius: 100, padding: "1px 8px" }}>{RECENT_USERS.length}</span>
-            </div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#F8FAFF" }}>
-                  {["Name", "Email", "Plan", "Projects", "Joined", "Status", "Action"].map((h) => (
-                    <th key={h} style={{ padding: "10px 20px", fontSize: 11, fontWeight: 700, color: "#94A3B8", textAlign: "left", textTransform: "uppercase", letterSpacing: 0.5 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {RECENT_USERS.map((u) => (
-                  <tr key={u.id} style={{ borderTop: "1px solid #F1F5F9", opacity: deletingId === u.id ? 0.4 : 1, transition: "opacity 0.3s" }}>
-                    <td style={{ padding: "14px 20px" }}>
-                      <div className="flex items-center gap-2.5">
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#3B82F6", flexShrink: 0 }}>{u.name.charAt(0)}</div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>{u.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#64748B" }}>{u.email}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 100, background: u.plan === "Pro" ? "#EFF6FF" : "#F1F5F9", color: u.plan === "Pro" ? "#3B82F6" : "#64748B" }}>{u.plan}</span>
-                    </td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#64748B" }}>{u.projects}</td>
-                    <td style={{ padding: "14px 20px", fontSize: 13, color: "#94A3B8" }}>{u.joined}</td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 100, background: u.status === "active" ? "#ECFDF5" : "#FEF2F2", color: u.status === "active" ? "#10B981" : "#EF4444" }}>{u.status}</span>
-                    </td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <button onClick={() => handleDeleteUser(u.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", display: "flex", alignItems: "center" }}><Trash2 size={15} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+function UsersTab({ adminId, onRefresh, refreshTrigger }: { adminId: string; onRefresh: () => void; refreshTrigger: number }) {
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<UserFilter>("all");
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoading(true);
+      const result = await getAllUsers(adminId);
+      if (result.success) {
+        setUsers(result.data || []);
+      }
+      setLoading(false);
+    };
+    loadUsers();
+  }, [adminId, refreshTrigger]);
+
+   const filtered = users.filter((u) => {
+     const matchesSearch =
+       u.email.toLowerCase().includes(search.toLowerCase()) ||
+       (u.full_name || "").toLowerCase().includes(search.toLowerCase());
+     const matchesFilter = filter === "all" || (filter === "admins" && u.role === "admin");
+     return matchesSearch && matchesFilter;
+   });
+
+   return (
+     <div>
+       {/* Filter tabs */}
+       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+         <button
+           onClick={() => setFilter("all")}
+           style={{
+             ...S.button,
+             background: filter === "all" ? "#EFF6FF" : "#F3F4F6",
+             color: filter === "all" ? "#3B82F6" : "#64748B",
+             padding: "8px 16px",
+           }}
+         >
+           All Users ({users.length})
+         </button>
+         <button
+           onClick={() => setFilter("admins")}
+           style={{
+             ...S.button,
+             background: filter === "admins" ? "#FEE2E2" : "#F3F4F6",
+             color: filter === "admins" ? "#DC2626" : "#64748B",
+             padding: "8px 16px",
+           }}
+         >
+           Admins Only ({users.filter((u) => u.role === "admin").length})
+         </button>
+       </div>
+
+       <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="Search by email or name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            ...S.input,
+            width: "100%",
+            paddingLeft: 36,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "8px center",
+          }}
+        />
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px", color: "#94A3B8" }}>
+          <Loader2 size={24} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+          <div style={{ marginTop: 12 }}>Loading users...</div>
+        </div>
+      ) : (
+        <div>
+          <div style={{ fontSize: 13, color: "#64748B", marginBottom: 12 }}>
+            {filtered.length} user{filtered.length !== 1 ? "s" : ""}
           </div>
-        )}
+          {filtered.map((user) => (
+            <UserRow key={user.id} user={user} adminId={adminId} onRefresh={onRefresh} />
+          ))}
+        </div>
+      )}
 
-        {/* ── FEATURES ── */}
-        {activeTab === "features" && (
-          <div style={{ ...CARD, overflow: "hidden" }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
-              <div className="flex items-center gap-2 mb-1"><Cpu size={16} color="#8B5CF6" /><span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Feature Flags</span></div>
-              <p style={{ fontSize: 13, color: "#94A3B8" }}>Toggle platform features on/off in real time.</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+// ─── Audit Logs Tab ────────────────────────────────────────────────────────────
+
+function AuditTab({ adminId }: { adminId: string }) {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadLogs = async () => {
+      setLoading(true);
+      const result = await getAuditLogs(adminId, 100);
+      if (result.success) {
+        setLogs(result.data || []);
+      }
+      setLoading(false);
+    };
+    loadLogs();
+  }, [adminId]);
+
+  return (
+    <div>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px", color: "#94A3B8" }}>
+          <Loader2 size={24} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
+          <div style={{ marginTop: 12 }}>Loading audit logs...</div>
+        </div>
+      ) : (
+        <div>
+          {logs.length === 0 ? (
+            <div style={{ ...S.card, textAlign: "center", color: "#94A3B8" }}>
+              No audit logs yet.
             </div>
-            <div className="flex flex-col">
-              {features.map((f, idx) => (
-                <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderTop: idx === 0 ? "none" : "1px solid #F1F5F9", background: f.enabled ? "white" : "#FAFAFA", transition: "background 0.2s" }}>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} style={S.card}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span style={{ fontSize: 14, fontWeight: 600, color: f.enabled ? "#1E293B" : "#94A3B8" }}>{f.label}</span>
-                      {!f.enabled && (
-                        <div className="flex items-center gap-1" style={{ background: "#FEF3C7", borderRadius: 4, padding: "1px 6px" }}>
-                          <AlertTriangle size={10} color="#D97706" />
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#D97706" }}>DISABLED</span>
-                        </div>
-                      )}
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1E293B" }}>
+                      {log.action}
                     </div>
-                    <p style={{ fontSize: 12, color: "#94A3B8" }}>{f.description}</p>
+                    <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
+                      {new Date(log.created_at).toLocaleString()}
+                    </div>
+                    {log.target_user_id && (
+                      <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
+                        Target: <code style={{ background: "#F3F4F6", padding: "2px 6px", borderRadius: 4 }}>
+                          {log.target_user_id.slice(0, 8)}...
+                        </code>
+                      </div>
+                    )}
                   </div>
-                  <button onClick={() => toggleFeature(f.id)} style={{ background: "none", border: "none", cursor: "pointer", flexShrink: 0, marginLeft: 24, display: "flex", alignItems: "center" }}>
-                    {f.enabled ? <ToggleRight size={32} color="#3B82F6" /> : <ToggleLeft size={32} color="#CBD5E1" />}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── REVENUE ── */}
-        {activeTab === "revenue" && (
-          <>
-            {/* Stat cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {REVENUE_STATS.map((s) => (
-                <div key={s.label} style={{ ...CARD, padding: "20px 22px" }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <s.icon size={18} color={s.color} />
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: s.positive ? "#ECFDF5" : "#FEF2F2", color: s.positive ? "#10B981" : "#EF4444", textAlign: "right", maxWidth: 110 }}>{s.delta}</span>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      background: "#F3F4F6",
+                      color: "#475569",
+                      padding: "4px 8px",
+                      borderRadius: 4,
+                      maxWidth: 200,
+                      overflow: "auto",
+                    }}
+                  >
+                    <code>{JSON.stringify(log.details).slice(0, 100)}</code>
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "#1E293B", marginBottom: 4 }}>{s.value}</div>
-                  <div style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-              {/* Bar chart: Revenue vs Cost vs Profit */}
-              <div style={{ ...CARD, padding: 24 }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={16} color="#10B981" />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Revenue vs Cost (6 months)</span>
-                </div>
-                <div className="flex items-center gap-4 mb-4">
-                  {[["#3B82F6","Revenue"],["#F59E0B","AI Cost"],["#10B981","Net Profit"]].map(([c,l]) => (
-                    <div key={l} className="flex items-center gap-1.5">
-                      <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
-                      <span style={{ fontSize: 11, color: "#64748B" }}>{l}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160 }}>
-                  {MONTHLY_REVENUE.map((m) => {
-                    const rH = (m.revenue / MAX_CHART) * 140;
-                    const cH = (m.cost    / MAX_CHART) * 140;
-                    const pH = ((m.revenue - m.cost) / MAX_CHART) * 140;
-                    return (
-                      <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 140 }}>
-                          <div style={{ width: 10, height: rH, background: "#3B82F6", borderRadius: "3px 3px 0 0" }} />
-                          <div style={{ width: 10, height: cH, background: "#F59E0B", borderRadius: "3px 3px 0 0" }} />
-                          <div style={{ width: 10, height: pH, background: "#10B981", borderRadius: "3px 3px 0 0" }} />
-                        </div>
-                        <span style={{ fontSize: 10, color: "#94A3B8", marginTop: 4 }}>{m.month}</span>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
-
-              {/* Pro subscriber growth */}
-              <div style={{ ...CARD, padding: 24 }}>
-                <div className="flex items-center gap-2 mb-5">
-                  <CreditCard size={16} color="#3B82F6" />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Pro Subscriber Growth</span>
-                </div>
-                <div className="flex flex-col gap-4">
-                  {MONTHLY_REVENUE.map((m, i) => {
-                    const maxU = Math.max(...MONTHLY_REVENUE.map((x) => x.proUsers));
-                    const pct  = (m.proUsers / maxU) * 100;
-                    const isLatest = i === MONTHLY_REVENUE.length - 1;
-                    return (
-                      <div key={m.month}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span style={{ fontSize: 12, fontWeight: isLatest ? 700 : 500, color: isLatest ? "#1E293B" : "#64748B" }}>{m.month}{isLatest ? " ← current" : ""}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#3B82F6" }}>{m.proUsers} Pro</span>
-                        </div>
-                        <div style={{ height: 8, background: "#F1F5F9", borderRadius: 100, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${pct}%`, background: isLatest ? "#3B82F6" : "#BFDBFE", borderRadius: 100 }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{ marginTop: 20, padding: "14px 16px", background: "#F8FAFF", borderRadius: 12, border: "1px solid #E0E7FF" }}>
-                  {[
-                    ["Revenue per Pro user", `$20 / month`, "#1E293B"],
-                    ["AI cost per Pro user",  `~$${(CUR.cost / CUR.proUsers).toFixed(2)} / month`, "#F59E0B"],
-                    ["Margin per Pro user",   `~$${(20 - CUR.cost / CUR.proUsers).toFixed(2)} / month`, "#10B981"],
-                  ].map(([label, val, color]) => (
-                    <div key={label} className="flex justify-between mt-1">
-                      <span style={{ fontSize: 12, color: "#64748B" }}>{label}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color }}>{val}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Infrastructure breakdown */}
-            <div style={{ ...CARD, overflow: "hidden" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9" }}>
-                <div className="flex items-center gap-2 mb-1"><Server size={16} color="#F59E0B" /><span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Infrastructure Cost Breakdown</span></div>
-                <p style={{ fontSize: 13, color: "#94A3B8" }}>Monthly GPU servers, storage, CDN, and compute.</p>
-              </div>
-              <div className="flex flex-col">
-                {SERVER_COSTS.map((item, idx) => (
-                  <div key={idx} style={{ padding: "16px 24px", borderTop: idx === 0 ? "none" : "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 16 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: `${item.color}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Gauge size={16} color={item.color} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>{item.label}</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>${item.cost.toLocaleString()}/mo</span>
-                      </div>
-                      <p style={{ fontSize: 11, color: "#94A3B8", marginBottom: 6 }}>{item.desc}</p>
-                      <div style={{ height: 5, background: "#F1F5F9", borderRadius: 100, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${item.usage}%`, background: item.color, borderRadius: 100 }} />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span style={{ fontSize: 10, color: "#94A3B8" }}>Utilization</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: item.color }}>{item.usage}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Total row */}
-              <div style={{ padding: "16px 24px", background: "#F8FAFF", borderTop: "2px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div className="flex items-center gap-2">
-                  <TrendingDown size={14} color="#EF4444" />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>Total Monthly Infrastructure</span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#EF4444" }}>
-                  ${SERVER_COSTS.reduce((s, x) => s + x.cost, 0).toLocaleString()}/mo
-                </span>
-              </div>
-            </div>
-          </>
-        )}
-
-        <div style={{ marginTop: 32, textAlign: "center" }}>
-          <Link to="/" style={{ fontSize: 13, color: "#94A3B8", textDecoration: "none" }}>← Back to FrameFlow</Link>
+            ))
+          )}
         </div>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+// ─── Main Admin Page ──────────────────────────────────────────────────────────
+
+export function AdminPage() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Check admin access
+  useEffect(() => {
+    if (!user) {
+      navigate("/signin");
+    } else if (user.role !== 'admin') {
+      console.warn('[AdminPage] Non-admin user attempted access:', user.email);
+      navigate("/projects");
+    }
+  }, [user, navigate]);
+
+  if (!user || user.role !== 'admin') return null;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/signin");
+  };
+
+  const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
+    { id: "users", label: "Users", icon: Users },
+    { id: "credits", label: "Credits", icon: CreditCard },
+    { id: "audit", label: "Audit Logs", icon: AlertCircle },
+  ];
+
+  // Dashboard stats component
+  const DashboardStats = () => {
+    const [totalUsers, setTotalUsers] = useState<number | null>(null);
+    const [totalCredits, setTotalCredits] = useState<number | null>(null);
+    const [activeUsers, setActiveUsers] = useState<number | null>(null);
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    useEffect(() => {
+      const loadStats = async () => {
+        setStatsLoading(true);
+        const [usersResult, creditsResult, activeResult] = await Promise.all([
+          getTotalUserCount(user.id),
+          getTotalCreditsDistributed(user.id),
+          getActiveUsersThisMonth(user.id),
+        ]);
+
+        if (usersResult.success) setTotalUsers(usersResult.data ?? 0);
+        if (creditsResult.success) setTotalCredits(creditsResult.data ?? 0);
+        if (activeResult.success) setActiveUsers(activeResult.data ?? 0);
+        setStatsLoading(false);
+      };
+      loadStats();
+    }, [user.id, refreshTrigger]);
+
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16, marginBottom: 32 }}>
+        <div style={{ ...S.card, marginBottom: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 8 }}>
+            Total Users
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#1E293B" }}>
+            {statsLoading ? "—" : totalUsers}
+          </div>
+          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>
+            {statsLoading ? "Loading..." : ""}
+          </div>
+        </div>
+        <div style={{ ...S.card, marginBottom: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 8 }}>
+            Total Credits Distributed
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#10B981" }}>
+            {statsLoading ? "—" : totalCredits}
+          </div>
+          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>Across all users</div>
+        </div>
+        <div style={{ ...S.card, marginBottom: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 8 }}>
+            Active This Month
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#3B82F6" }}>
+            {statsLoading ? "—" : activeUsers}
+          </div>
+          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>Last 30 days</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Credits management component
+  const CreditsTab = () => {
+    return (
+      <div>
+        <div style={S.card}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>
+            Credits System
+          </div>
+          <div style={{ fontSize: 13, color: "#64748B", lineHeight: "1.6" }}>
+            Manage user credits directly from the <strong>Users</strong> tab. Click the edit button on any user card to:
+          </div>
+          <ul style={{ fontSize: 13, color: "#64748B", marginTop: 12, paddingLeft: 20, lineHeight: "1.7" }}>
+            <li>Add credits with a reason/memo</li>
+            <li>Track credit history via audit logs</li>
+            <li>Adjust subscription plans per user</li>
+          </ul>
+          <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 16, padding: "12px", background: "#F0F9FF", borderRadius: 8, borderLeft: "3px solid #3B82F6" }}>
+            💡 Use the "Reason" field to document why credits were added (e.g., "Promotional bonus", "Bug compensation")
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#F4F8FF",
+        fontFamily: "'DM Sans', 'Inter', sans-serif",
+      }}
+    >
+      {/* Top bar */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          background: "rgba(255,255,255,0.9)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid #E8EFFE",
+          height: 60,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 32px",
+          justifyContent: "space-between",
+        }}
+      >
+        <button
+          onClick={() => navigate("/projects")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#64748B",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          <ArrowLeft size={16} /> Back to projects
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Zap size={14} color="white" fill="white" />
+          </div>
+          <span style={{ fontWeight: 700, fontSize: 17, color: "#1E293B" }}>Admin</span>
+        </div>
+        <button
+          onClick={handleSignOut}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "1px solid #E2E8F0",
+            borderRadius: 8,
+            cursor: "pointer",
+            color: "#64748B",
+            fontSize: 13,
+            padding: "6px 12px",
+          }}
+        >
+          <LogOut size={13} /> Sign out
+        </button>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 32, borderBottom: "1px solid #E8EFFE", paddingBottom: 16 }}>
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                borderRadius: 8,
+                border: "none",
+                background: activeTab === id ? "#EFF6FF" : "transparent",
+                color: activeTab === id ? "#3B82F6" : "#64748B",
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: activeTab === id ? 600 : 500,
+              }}
+            >
+              <Icon size={16} /> {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <DashboardStats />
+        
+        {activeTab === "users" && (
+          <UsersTab
+            adminId={user.id}
+            onRefresh={() => setRefreshTrigger((t) => t + 1)}
+            refreshTrigger={refreshTrigger}
+          />
+        )}
+        {activeTab === "credits" && <CreditsTab />}
+        {activeTab === "audit" && <AuditTab adminId={user.id} />}
       </div>
     </div>
   );

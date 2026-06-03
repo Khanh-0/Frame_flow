@@ -189,7 +189,7 @@
 // Đã xoá mock admin login.
 // Gọi useAuth() → signIn() → Supabase thật.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Eye, EyeOff, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
@@ -200,25 +200,46 @@ export function SignInPage() {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate   = useNavigate();
+
+  // Redirect user after successful login when user data is available
+  useEffect(() => {
+    if (justLoggedIn && user) {
+      console.log('[SignInPage] User loaded:', user.email, 'Role:', user.role);
+      
+      if (user.role === 'admin') {
+        console.log('[SignInPage] Redirecting admin to /admin');
+        navigate("/admin");
+      } else {
+        console.log('[SignInPage] Redirecting user to /projects');
+        navigate("/projects");
+      }
+      setJustLoggedIn(false);
+    }
+  }, [justLoggedIn, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    console.log('[SignInPage] Submitting login for:', email);
 
     const result = await signIn({ email, password });
+    console.log('[SignInPage] signIn result:', result);
 
     setLoading(false);
 
     if (!result.success) {
+      console.error('[SignInPage] Sign in failed:', result.error);
       setError(result.error ?? "Invalid email or password.");
       return;
     }
 
-    navigate("/projects");
+    console.log('[SignInPage] Sign in successful, waiting for user data...');
+    setJustLoggedIn(true);
   };
 
   return (

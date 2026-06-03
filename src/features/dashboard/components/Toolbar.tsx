@@ -165,6 +165,7 @@ type DashboardCtx = ReturnType<typeof useDashboard>;
 
 interface ToolbarProps {
   ctx: DashboardCtx;
+  projectName?: string;
 }
 
 // ─── Shared button base styles ────────────────────────────────────────────────
@@ -194,7 +195,7 @@ const divider: React.CSSProperties = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function Toolbar({ ctx }: ToolbarProps) {
+export function Toolbar({ ctx, projectName }: ToolbarProps) {
   const {
     activeFrame,
     undoStack,
@@ -234,7 +235,7 @@ export function Toolbar({ ctx }: ToolbarProps) {
         </Link>
         <ChevronRight size={12} color="#CBD5E1" />
         <span style={{ fontSize: 12, fontWeight: 600, color: "#1E293B" }}>
-          Magic Girl Animation
+          {projectName || "Untitled Project"}
         </span>
       </div>
 

@@ -240,16 +240,20 @@ export function SignUpPage() {
     }
 
     setLoading(true);
+    console.log('[SignUpPage] Submitting signup for:', email);
 
     const result = await signUp({ email, password, fullName: name });
+    console.log('[SignUpPage] signUp result:', result);
 
     setLoading(false);
 
     if (!result.success) {
+      console.error('[SignUpPage] Sign up failed:', result.error);
       setError(result.error ?? "Something went wrong. Please try again.");
       return;
     }
 
+    console.log('[SignUpPage] Sign up successful, showing email verification screen');
     // Supabase sends verification email — show confirmation screen
     setEmailSent(true);
   };

@@ -9,9 +9,10 @@ type DashboardCtx = ReturnType<typeof useDashboard>;
 
 interface LeftSidebarProps {
   ctx: DashboardCtx;
+  projectName?: string;
 }
 
-export function LeftSidebar({ ctx }: LeftSidebarProps) {
+export function LeftSidebar({ ctx, projectName }: LeftSidebarProps) {
   const {
     uncoloredFiles, activeFrame, frameStates, frameRefMap,
     referenceImage, setReferenceImage,
@@ -42,10 +43,10 @@ export function LeftSidebar({ ctx }: LeftSidebarProps) {
       {/* Project breadcrumb */}
       <div style={{ padding: "8px 14px 0", flexShrink: 0 }}>
         <Link to="/projects" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#64748B", textDecoration: "none", padding: "5px 7px", borderRadius: 7, background: "rgba(255,255,255,0.6)" }}>
-          <FolderOpen size={11} />
-          <span>Magic Girl Animation</span>
-          <ChevronRight size={10} style={{ marginLeft: "auto" }} />
-        </Link>
+           <FolderOpen size={11} />
+           <span>{projectName || "Untitled Project"}</span>
+           <ChevronRight size={10} style={{ marginLeft: "auto" }} />
+         </Link>
       </div>
 
       {/* Frames header */}

@@ -6,6 +6,7 @@ import {
   Sun, Moon, Monitor, Eye, EyeOff, Zap, ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useProfile } from "@/features/auth/hooks/useProfile";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,32 +120,29 @@ function NotifRow({ label, desc, checked, onChange }: { label: string; desc: str
 
 // ─── Tab: Account ─────────────────────────────────────────────────────────────
 
-function AccountTab({ user, updateProfile }: { user: any; updateProfile: any }) {
-  const [fullName, setFullName] = useState((user as any)?.fullName ?? "");
+function AccountTab({ user }: { user: any }) {
+  const { profile, loading, updateProfile } = useProfile(user?.id ?? null);
+  const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(`profile_${user.id}`);
-    if (raw) {
-      try {
-        const p = JSON.parse(raw);
-        if (!fullName) setFullName(p.fullName ?? "");
-        setAvatarUrl(p.avatarUrl ?? "");
-        setBio(p.bio ?? "");
-      } catch { /* ignore */ }
+    if (profile) {
+      setFullName(profile.full_name ?? "");
+      setAvatarUrl(profile.avatar_url ?? "");
     }
-  }, []);
+  }, [profile]);
 
   const initials = fullName ? fullName[0].toUpperCase() : user?.email?.[0]?.toUpperCase() ?? "U";
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await updateProfile({ full_name: fullName, avatar_url: avatarUrl });
-    if (res.success) {
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify({ fullName, avatarUrl, bio }));
+    const success = await updateProfile({
+      full_name: fullName,
+      avatar_url: avatarUrl,
+    });
+    if (success) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
@@ -212,18 +210,10 @@ function AccountTab({ user, updateProfile }: { user: any; updateProfile: any }) 
           </div>
         </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <label style={S.label}>Bio</label>
-          <textarea
-            value={bio}
-            onChange={e => setBio(e.target.value)}
-            rows={3}
-            placeholder="A short description about yourself…"
-            style={{ ...S.input, resize: "vertical" }}
-            onFocus={e => (e.target.style.borderColor = "#3B82F6")}
-            onBlur={e => (e.target.style.borderColor = "#E2E8F0")}
-          />
-        </div>
+         <div style={{ marginBottom: 20 }}>
+           <label style={S.label}>Email</label>
+           <input value={user.email ?? ""} disabled style={{ ...S.input, background: "#F8FAFC", color: "#94A3B8", cursor: "not-allowed" }} />
+         </div>
 
         <SaveButton saving={saving} saved={saved} onClick={handleSave} />
       </div>
@@ -389,31 +379,35 @@ function NotificationsTab() {
 
 // ─── Tab: Security ────────────────────────────────────────────────────────────
 
-function SecurityTab({ user, updateProfile }: { user: any; updateProfile: any }) {
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
+function SecurityTab({ user }: { user: any }) {
+   const [currentPw, setCurrentPw] = useState("");
+   const [newPw, setNewPw] = useState("");
+   const [confirmPw, setConfirmPw] = useState("");
+   const [showPw, setShowPw] = useState(false);
+   const [saving, setSaving] = useState(false);
+   const [saved, setSaved] = useState(false);
+   const [error, setError] = useState("");
 
-  const handleSave = async () => {
-    setError("");
-    if (newPw !== confirmPw) { setError("Passwords do not match"); return; }
-    if (newPw.length < 8) { setError("Password must be at least 8 characters"); return; }
-    setSaving(true);
-    // Supabase updateUser with password
-    const res = await updateProfile({ password: newPw } as any);
-    if (res.success) {
-      setSaved(true);
-      setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      setTimeout(() => setSaved(false), 2000);
-    } else {
-      setError(res.error ?? "Failed to update password");
-    }
-    setSaving(false);
-  };
+   const handleSave = async () => {
+     setError("");
+     if (newPw !== confirmPw) { setError("Passwords do not match"); return; }
+     if (newPw.length < 8) { setError("Password must be at least 8 characters"); return; }
+     setSaving(true);
+     
+     try {
+       const { error: updateError } = await user.updateUser?.({ password: newPw });
+       if (updateError) {
+         setError(updateError.message ?? "Failed to update password");
+       } else {
+         setSaved(true);
+         setCurrentPw(""); setNewPw(""); setConfirmPw("");
+         setTimeout(() => setSaved(false), 2000);
+       }
+     } catch (err) {
+       setError(err instanceof Error ? err.message : "Failed to update password");
+     }
+     setSaving(false);
+   };
 
   const pwInput = (label: string, value: string, onChange: (v: string) => void) => (
     <div style={{ marginBottom: 16 }}>
@@ -476,14 +470,15 @@ function SecurityTab({ user, updateProfile }: { user: any; updateProfile: any })
 // ─── Tab: Billing ─────────────────────────────────────────────────────────────
 
 function BillingTab({ user }: { user: any }) {
-  const plan = "Free";
-  const credits = 0;
+   const { profile, loading } = useProfile(user?.id ?? null);
+   const credits = profile?.credits ?? 0;
+   const subscription_plan = profile?.subscription_plan ?? "free";
 
-  const plans = [
-    { name: "Free", price: "$0", period: "forever", features: ["5 projects", "50 exports/mo", "Basic templates"], current: true },
-    { name: "Pro",  price: "$12", period: "/ month", features: ["Unlimited projects", "500 exports/mo", "All templates", "Priority support"], current: false },
-    { name: "Team", price: "$29", period: "/ month", features: ["Everything in Pro", "5 team members", "Shared workspace", "Admin dashboard"], current: false },
-  ];
+   const plans = [
+     { name: "free", label: "Free", price: "$0", period: "forever", features: ["5 projects", "50 exports/mo", "Basic templates"] },
+     { name: "pro",  label: "Pro",  price: "$12", period: "/ month", features: ["Unlimited projects", "500 exports/mo", "All templates", "Priority support"] },
+     { name: "enterprise", label: "Enterprise", price: "$29", period: "/ month", features: ["Everything in Pro", "5 team members", "Shared workspace", "Admin dashboard"] },
+   ];
 
   return (
     <>
@@ -508,18 +503,20 @@ function BillingTab({ user }: { user: any }) {
       <div style={{ ...S.card }}>
         <div style={S.sectionTitle}>Plans</div>
         <div style={S.sectionDesc}>Choose the plan that works best for you.</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-          {plans.map(p => (
-            <div key={p.name} style={{
-              border: p.current ? "2px solid #3B82F6" : "1.5px solid #E2E8F0",
-              borderRadius: 14, padding: "20px 18px",
-              background: p.current ? "#F0F7FF" : "white",
-              position: "relative",
-            }}>
-              {p.current && (
-                <span style={{ position: "absolute", top: -1, right: 14, fontSize: 11, background: "#3B82F6", color: "white", padding: "3px 10px", borderRadius: "0 0 8px 8px", fontWeight: 600 }}>Current</span>
-              )}
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#1E293B", marginBottom: 4 }}>{p.name}</div>
+         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+           {plans.map(p => {
+             const isCurrent = p.name === subscription_plan;
+             return (
+             <div key={p.name} style={{
+               border: isCurrent ? "2px solid #3B82F6" : "1.5px solid #E2E8F0",
+               borderRadius: 14, padding: "20px 18px",
+               background: isCurrent ? "#F0F7FF" : "white",
+               position: "relative",
+             }}>
+               {isCurrent && (
+                 <span style={{ position: "absolute", top: -1, right: 14, fontSize: 11, background: "#3B82F6", color: "white", padding: "3px 10px", borderRadius: "0 0 8px 8px", fontWeight: 600 }}>Current</span>
+               )}
+               <div style={{ fontSize: 16, fontWeight: 700, color: "#1E293B", marginBottom: 4 }}>{p.label}</div>
               <div style={{ marginBottom: 16 }}>
                 <span style={{ fontSize: 26, fontWeight: 800, color: "#1E293B" }}>{p.price}</span>
                 <span style={{ fontSize: 13, color: "#64748B" }}> {p.period}</span>
@@ -531,13 +528,14 @@ function BillingTab({ user }: { user: any }) {
                   </li>
                 ))}
               </ul>
-              {!p.current && (
-                <button style={{ width: "100%", padding: "9px 0", borderRadius: 9, border: "1.5px solid #3B82F6", background: "white", color: "#3B82F6", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Upgrade
-                </button>
-              )}
-            </div>
-          ))}
+               {!isCurrent && (
+                 <button style={{ width: "100%", padding: "9px 0", borderRadius: 9, border: "1.5px solid #3B82F6", background: "white", color: "#3B82F6", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                   Upgrade
+                 </button>
+               )}
+             </div>
+           );
+           })}
         </div>
       </div>
 
@@ -672,11 +670,11 @@ export function UserSettingsPage() {
             {activeTab === "billing"       && "Manage your plan, credits, and invoices."}
           </p>
 
-          {activeTab === "account"       && <AccountTab user={user} updateProfile={updateProfile} />}
-          {activeTab === "appearance"    && <AppearanceTab />}
-          {activeTab === "notifications" && <NotificationsTab />}
-          {activeTab === "security"      && <SecurityTab user={user} updateProfile={updateProfile} />}
-          {activeTab === "billing"       && <BillingTab user={user} />}
+       {activeTab === "account"       && <AccountTab user={user} />}
+           {activeTab === "appearance"    && <AppearanceTab />}
+           {activeTab === "notifications" && <NotificationsTab />}
+           {activeTab === "security"      && <SecurityTab user={user} />}
+           {activeTab === "billing"       && <BillingTab user={user} />}
         </main>
       </div>
     </div>

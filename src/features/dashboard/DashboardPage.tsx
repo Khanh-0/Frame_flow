@@ -163,27 +163,27 @@ import { ContextMenu } from "./components/ContextMenu";
 import { ReferenceModal } from "./components/ReferenceModal";
 import { useDashboard } from "./hooks/useDashboard";
 import { useParams } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getProject } from "./services/project.api";
 export function Dashboard() {
   const ctx = useDashboard();
   const { projectId } = useParams();
+  const [projectName, setProjectName] = useState<string>("");
+
   useEffect(() => {
-  if (!projectId) return;
+    if (!projectId) return;
 
-  async function loadProject() {
-    try {
-      const project = await getProject(projectId);
-
-      console.log(project);
-    } catch (error) {
-      console.error(error);
+    async function loadProject() {
+      try {
+        const project = await getProject(projectId!);
+        setProjectName(project.name);
+      } catch (error) {
+        console.error(error);
+      }
     }
-  }
 
-  loadProject();
-}, [projectId]);
-  console.log(projectId);
+    loadProject();
+  }, [projectId]);
   const {
     activeFrame, frameStates, referenceImage, lockLineArt,
     activeTool, activeColor, brushSize, opacity, hardness,
@@ -205,11 +205,11 @@ export function Dashboard() {
       <input ref={customColoredInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleCustomColoredUpload} />
 
       {/* Left sidebar */}
-      <LeftSidebar ctx={ctx} />
+      <LeftSidebar ctx={ctx} projectName={projectName} />
 
       {/* Main content */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-        <Toolbar ctx={ctx} />
+        <Toolbar ctx={ctx} projectName={projectName} />
 
         <div style={{ flex: 1, padding: "12px 12px 0", display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
           {/* Canvas area */}

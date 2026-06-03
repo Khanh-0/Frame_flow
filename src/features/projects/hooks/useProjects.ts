@@ -18,11 +18,14 @@ export function useProjects() {
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renameModalId, setRenameModalId] = useState<string | null>(null);
+  const [renameInputValue, setRenameInputValue] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const filtered = projects.filter((p) =>
@@ -69,19 +72,38 @@ export function useProjects() {
   }, [newProjectName, navigate]);
 
   // ── Rename ─────────────────────────────────────────────────────────────────
-  const handleRename = useCallback(async (id: number, name: string) => {
+  const handleRename = useCallback(async (id: string, name: string) => {
     try {
+      setIsRenaming(true);
       const updated = await updateProject(id, { name });
       setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
     } catch (err) {
       setError((err as Error).message);
     } finally {
+      setIsRenaming(false);
       setOpenMenuId(null);
+      setRenameModalId(null);
+      setRenameInputValue("");
     }
   }, []);
 
+  const openRenameModal = (id: string, currentName: string) => {
+    setRenameModalId(id);
+    setRenameInputValue(currentName);
+  };
+
+  const closeRenameModal = () => {
+    setRenameModalId(null);
+    setRenameInputValue("");
+  };
+
+  const submitRename = async () => {
+    if (!renameInputValue.trim() || !renameModalId) return;
+    await handleRename(renameModalId, renameInputValue.trim());
+  };
+
   // ── Delete ─────────────────────────────────────────────────────────────────
-  const handleDelete = useCallback(async (id: number) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       setDeletingId(id);
       await deleteProject(id);
@@ -126,6 +148,15 @@ export function useProjects() {
     isCreating,
     openNewModal,
     closeNewModal,
+
+    // Rename Modal
+    renameModalId,
+    renameInputValue,
+    setRenameInputValue,
+    isRenaming,
+    openRenameModal,
+    closeRenameModal,
+    submitRename,
 
     // Async states
     deletingId,

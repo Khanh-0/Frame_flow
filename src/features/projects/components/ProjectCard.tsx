@@ -7,9 +7,10 @@ interface ProjectCardProps {
   project: Project;
   isMenuOpen: boolean;
   isDeleting: boolean;
-  onMenuToggle: (id: number | null) => void;
-  onRename: (id: number, name: string) => void;
-  onDelete: (id: number) => void;
+  onMenuToggle: (id: string | null) => void;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+  onOpenRenameModal?: (id: string, name: string) => void;
 }
 
 export function ProjectCard({
@@ -19,6 +20,7 @@ export function ProjectCard({
   onMenuToggle,
   onRename,
   onDelete,
+  onOpenRenameModal,
 }: ProjectCardProps) {
   const navigate = useNavigate();
   const progress =
@@ -84,11 +86,10 @@ export function ProjectCard({
                 icon: <Edit3 size={13} />,
                 label: "Rename",
                 danger: false,
-                // Inline prompt — swap with a proper rename modal if needed
                 action: () => {
-                  const name = window.prompt("New project name:", project.name);
-                  if (name?.trim()) onRename(project.id, name.trim());
-                  else onMenuToggle(null);
+                  if (onOpenRenameModal) {
+                    onOpenRenameModal(project.id, project.name);
+                  }
                 },
               },
               {

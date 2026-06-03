@@ -1,8 +1,11 @@
+import { useState, useRef, useEffect } from "react";
 import { Plus, Search, FolderOpen } from "lucide-react";
 import { ProjectsHeader } from "./components/ProjectsHeader";
 import { ProjectCard } from "./components/ProjectCard";
 import { NewProjectCard } from "./components/NewProjectCard";
 import { NewProjectModal } from "./components/NewProjectModal";
+import { RenameModal } from "./components/RenameModal";
+import { SearchSuggestions } from "./components/SearchSuggestions";
 import { useProjects } from "./hooks/useProjects";
 
 export function ProjectsPage() {
@@ -15,7 +18,34 @@ export function ProjectsPage() {
     deletingId,
     openNewModal, closeNewModal,
     handleCreateProject, handleRename, handleDelete,
+    renameModalId, renameInputValue, setRenameInputValue, isRenaming,
+    openRenameModal, closeRenameModal, submitRename,
   } = ctx;
+
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchDropdown(false);
+      }
+    }
+
+    if (showSearchDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showSearchDropdown]);
+
+  const handleSelectSuggestion = (project: any) => {
+    setSearch(project.name);
+    setShowSearchDropdown(false);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F4F8FF 0%, #FFFFFF 40%)", fontFamily: "'Inter', sans-serif" }}>
@@ -57,20 +87,35 @@ export function ProjectsPage() {
 
         {/* Search */}
         <div style={{ position: "relative", maxWidth: 340, marginBottom: 32 }}>
-          <Search size={15} color="#94A3B8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+          <Search size={15} color="#94A3B8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", zIndex: 40 }} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search projects…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#3B82F6";
+              setShowSearchDropdown(true);
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#E2E8F0";
+            }}
             style={{
               width: "100%", padding: "10px 14px 10px 36px", borderRadius: 10,
               border: "1.5px solid #E2E8F0", fontSize: 14, color: "#1E293B",
               fontFamily: "'Inter', sans-serif", outline: "none", background: "white",
               boxSizing: "border-box",
+              position: "relative",
+              zIndex: 40,
             }}
-            onFocus={(e) => (e.target.style.borderColor = "#3B82F6")}
-            onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+          />
+          <SearchSuggestions
+            isOpen={showSearchDropdown}
+            search={search}
+            suggestions={filtered}
+            onSelectSuggestion={handleSelectSuggestion}
+            onClear={() => setShowSearchDropdown(false)}
           />
         </div>
 
@@ -109,6 +154,7 @@ export function ProjectsPage() {
                 onMenuToggle={setOpenMenuId}
                 onRename={handleRename}
                 onDelete={handleDelete}
+                onOpenRenameModal={openRenameModal}
               />
             ))}
           </div>
@@ -125,6 +171,16 @@ export function ProjectsPage() {
           onCancel={closeNewModal}
         />
       )}
+
+      {/* Rename modal */}
+      <RenameModal
+        isOpen={renameModalId !== null}
+        projectName={renameInputValue}
+        isRenaming={isRenaming}
+        onNameChange={setRenameInputValue}
+        onConfirm={submitRename}
+        onCancel={closeRenameModal}
+      />
     </div>
   );
 }

@@ -14,6 +14,10 @@ import {
 } from "@/features/auth/UserSettingsPage";
 
 import {
+  ProjectSettingsPage,
+} from "@/features/auth/ProjectSettingsPage";
+
+import {
   Dashboard,
 } from "@/features/dashboard/DashboardPage";
 
@@ -32,6 +36,10 @@ import {
 import {
   AuthGuard,
 } from "@/features/auth/components/AuthGuard";
+
+import {
+  AdminGuard,
+} from "@/features/auth/components/AdminGuard";
 
 const router = createBrowserRouter([
   {
@@ -52,14 +60,22 @@ const router = createBrowserRouter([
           </AuthGuard>
         ),
       },
-      {
-        path: "settings",
-        element: (
-          <AuthGuard>
-            <UserSettingsPage />
-          </AuthGuard>
-        ),
-      },
+       {
+         path: "settings",
+         element: (
+           <AuthGuard>
+             <UserSettingsPage />
+           </AuthGuard>
+         ),
+       },
+       {
+         path: "project-settings",
+         element: (
+           <AuthGuard>
+             <ProjectSettingsPage />
+           </AuthGuard>
+         ),
+       },
 
       {
         path: "dashboard/:projectId",
@@ -81,10 +97,14 @@ const router = createBrowserRouter([
         Component: SignUpPage,
       },
 
-      {
-        path: "admin",
-        Component: AdminPage,
-      },
+       {
+         path: "admin",
+         element: (
+           <AdminGuard>
+             <AdminPage />
+           </AdminGuard>
+         ),
+       },
     ],
   },
 ]);

@@ -3,8 +3,13 @@
 export interface AuthUser {
   id: string;
   email: string | undefined;
+  fullName?: string;
   emailConfirmed: boolean;
   createdAt: string;
+  role?: string;
+  credits?: number;
+  subscription_plan?: string;
+  avatar_url?: string;
 }
 
 export interface AuthState {
