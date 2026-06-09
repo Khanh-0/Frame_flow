@@ -3,7 +3,7 @@
 // Admin API service for managing users, credits, and audit logs.
 // Only accessible to admin users (role === 'admin').
 
-import { supabase } from "../../../features/auth/services/auth.api";
+import { supabase } from "@/lib/supabase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

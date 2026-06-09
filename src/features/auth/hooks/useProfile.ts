@@ -6,7 +6,7 @@
 // - Handle loading/error states
 
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../services/auth.api";
+import { supabase } from "@/lib/supabase";
 
 export interface UserProfile {
   id: string;

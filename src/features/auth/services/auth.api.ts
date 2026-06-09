@@ -4,17 +4,8 @@
 // Component và Hook KHÔNG gọi Supabase trực tiếp — chỉ qua file này.
 // Sau này đổi backend chỉ cần sửa file này, UI không đổi.
 
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import type { AuthResult, AuthUser, SignInCredentials, SignUpCredentials } from "../types";
-
-// ─── Supabase client ───────────────────────────────────────────────────────────
-// Đọc từ .env:
-//   VITE_SUPABASE_URL=...
-//   VITE_SUPABASE_ANON_KEY=...
-const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
