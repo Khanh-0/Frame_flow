@@ -1,5 +1,7 @@
-import { Sparkles, Star, X } from "lucide-react";
+import { Sparkles, Star, X, Download, Trash2 } from "lucide-react";
 import type { useDashboard } from "../hooks/useDashboard";
+import { useState } from "react";
+import { ExportModal } from "./ExportModal";
 
 type DashboardCtx = ReturnType<typeof useDashboard>;
 
@@ -14,9 +16,31 @@ export function ContextMenu({ ctx }: ContextMenuProps) {
     referenceImage,
     handleSetFrameRef, handleSetFrameAsGlobalRef, handleClearFrameRef,
     setFrameStates,
+    paintableFrames,
+    deleteFrame,
+    addToast,
   } = ctx;
 
+  const [showExportModal, setShowExportModal] = useState(false);
+
   if (!contextMenu) return null;
+
+  const handleAIColor = () => {
+    // Validation: check if reference is selected
+    if (!referenceImage) {
+      addToast("❌ Vui lòng chọn ảnh tham chiếu trước!", "error");
+      return;
+    }
+    // Validation: check if frame is selected to paint
+    if (paintableFrames.size === 0) {
+      addToast("❌ Vui lòng chọn frame cần tô màu!", "error");
+      return;
+    }
+    const idx = contextMenu.frameIndex;
+    setFrameStates((prev) => { const n = [...prev]; n[idx] = "ai"; return n; });
+    addToast("⏳ Đang tô màu frame...", "info", 5000);
+    setContextMenu(null);
+  };
 
   return (
     <>
@@ -80,9 +104,7 @@ export function ContextMenu({ ctx }: ContextMenuProps) {
           <button
             onMouseDown={(e) => {
               e.stopPropagation();
-              const idx = contextMenu.frameIndex;
-              setFrameStates((prev) => { const n = [...prev]; n[idx] = "ai"; return n; });
-              setContextMenu(null);
+              handleAIColor();
             }}
             style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "8px 13px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "'Inter',sans-serif" }}
           >
@@ -112,8 +134,51 @@ export function ContextMenu({ ctx }: ContextMenuProps) {
               </button>
             </>
           )}
-        </div>
-      </div>
+
+          {/* Separator */}
+          <div style={{ height: 1, background: "#F1F5F9", margin: "3px 0" }} />
+
+           {/* Export Button */}
+           <button
+             onMouseDown={(e) => { e.stopPropagation(); setShowExportModal(true); }}
+             style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "8px 13px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "'Inter',sans-serif" }}
+           >
+             <div style={{ width: 26, height: 26, borderRadius: 5, background: "#DBEAFE", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+               <Download size={13} color="#0EA5E9" />
+             </div>
+             <div>
+               <div style={{ fontSize: 11, fontWeight: 600, color: "#1E293B" }}>Export</div>
+               <div style={{ fontSize: 9, color: "#94A3B8" }}>Download frame(s)</div>
+             </div>
+           </button>
+
+           {/* Export Modal - Pass frameIndex for context menu */}
+           <ExportModal
+             ctx={ctx}
+             isOpen={showExportModal}
+             onClose={() => { setShowExportModal(false); setContextMenu(null); }}
+             frameIndex={contextMenu?.frameIndex}
+           />
+
+          {/* Delete Button */}
+              <button
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  deleteFrame(contextMenu.frameIndex);
+                  setContextMenu(null);
+                }}
+            style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", padding: "8px 13px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "'Inter',sans-serif" }}
+          >
+            <div style={{ width: 26, height: 26, borderRadius: 5, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Trash2 size={13} color="#DC2626" />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#DC2626" }}>Delete Frame</div>
+              <div style={{ fontSize: 9, color: "#94A3B8" }}>Remove from project</div>
+            </div>
+           </button>
+         </div>
+       </div>
     </>
   );
 }

@@ -161,6 +161,7 @@ import { Toolbar } from "./components/Toolbar";
 import { Timeline } from "./components/Timeline";
 import { ContextMenu } from "./components/ContextMenu";
 import { ReferenceModal } from "./components/ReferenceModal";
+import { Toast } from "./components/Toast";
 import { useDashboard } from "./hooks/useDashboard";
 import { useParams } from "react-router";
 import { useEffect, useState } from "react";
@@ -173,19 +174,33 @@ export function Dashboard() {
   useEffect(() => {
     if (!projectId) return;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
     async function loadProject() {
       try {
         const project = await getProject(projectId!);
         setProjectName(project.name);
       } catch (error) {
-        console.error(error);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.error('getProject timeout - API took too long');
+        } else {
+          console.error('Error loading project:', error);
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
     loadProject();
+    
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [projectId]);
   const {
-    activeFrame, frameStates, referenceImage, lockLineArt,
+    activeFrame, frameStates, referenceImage,
     activeTool, activeColor, brushSize, opacity, hardness,
     blendMode, fillTolerance, gapClose,
     uncoloredFiles,
@@ -225,11 +240,13 @@ export function Dashboard() {
               blendMode={blendMode}
               fillTolerance={fillTolerance}
               gapClose={gapClose}
-              lockLineArt={lockLineArt}
               onColorPicked={handleColorPicked}
               onStroke={handleStroke}
               onBeforeStroke={pushUndoSnapshot}
               canvasRef={canvasRef}
+              smudgeStrength={ctx.smudgeStrength}
+              dodgeExposure={ctx.dodgeExposure}
+              burnExposure={ctx.burnExposure}
             />
 
             {/* Frame counter badge */}
@@ -266,25 +283,6 @@ export function Dashboard() {
               </div>
             )}
 
-            {/* Lock Line Art badge */}
-            {lockLineArt && (
-              <div style={{
-                position: "absolute",
-                top: frameStates[activeFrame] !== "plain" ? 44 : 12,
-                left: 12,
-                background: "rgba(79,70,229,0.9)",
-                backdropFilter: "blur(6px)",
-                borderRadius: 100, padding: "3px 10px",
-                display: "flex", alignItems: "center", gap: 5,
-                pointerEvents: "none",
-                border: "1px solid rgba(165,180,252,0.3)",
-              }}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <span style={{ fontSize: 9, fontWeight: 700, color: "white", letterSpacing: 0.4 }}>Line Art Locked</span>
-              </div>
-            )}
 
             {/* Tool indicator */}
             <div style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", borderRadius: 7, padding: "3px 8px", display: "flex", alignItems: "center", gap: 5, pointerEvents: "none" }}>
@@ -306,6 +304,7 @@ export function Dashboard() {
       {/* Overlays */}
       <ContextMenu ctx={ctx} />
       <ReferenceModal ctx={ctx} />
+      <Toast toasts={ctx.toasts} onRemove={ctx.removeToast} />
     </div>
   );
 }

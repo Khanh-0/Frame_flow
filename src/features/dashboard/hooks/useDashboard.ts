@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import JSZip from "jszip";
 import type { Tool, BlendMode, FrameState, ImportedFile, ContextMenu } from "../types";
 import type { PaintCanvasHandle } from "../components/PaintCanvas";
 import { uploadFrameImage } from "../services/storage.api";
-import { createFrame } from "../services/frame.api";
+import { createFrame, deleteFrame as deleteFrameApi } from "../services/frame.api";
 import { useParams } from "react-router";
 import { loadFrames } from "../services/frame.api";
 import {
@@ -12,6 +13,7 @@ import {
 import {
   updateFrameColor,
 } from "../services/frame.api";
+import type { ToastMessage } from "../components/Toast";
 export function useDashboard() {
   const { projectId } = useParams();
   const [activeFrame, setActiveFrame] = useState(0);
@@ -25,6 +27,9 @@ export function useDashboard() {
     return;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
   const init = async () => {
     try {
       const frames = await loadFrames(
@@ -32,7 +37,7 @@ export function useDashboard() {
       );
 
       setUncoloredFiles(
-        frames.map((frame) => ({
+        frames.map((frame: any) => ({
           id: frame.id,
           name: `Frame ${frame.frame_index + 1}`,
           url: frame.source_image_url,
@@ -40,11 +45,22 @@ export function useDashboard() {
         })),
       );
     } catch (error) {
-      console.error(error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('loadFrames timeout - API took too long');
+      } else {
+        console.error('Error loading frames:', error);
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
   init();
+  
+  return () => {
+    controller.abort();
+    clearTimeout(timeoutId);
+  };
 }, [projectId]);
   const [referenceImage, setReferenceImage] = useState<ImportedFile | null>(null);
   const [frameRefMap, setFrameRefMap] = useState<Record<number, ImportedFile>>({});
@@ -52,6 +68,18 @@ export function useDashboard() {
   const [framePaints, setFramePaints] = useState<Record<number, string>>({});
   const [undoStack, setUndoStack] = useState<Record<number, string[]>>({});
   const [redoStack, setRedoStack] = useState<Record<number, string[]>>({});
+  const [paintableFrames, setPaintableFrames] = useState<Set<number>>(new Set());
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Toast helper
+  const addToast = useCallback((message: string, type: "success" | "error" | "info" = "info", duration = 3000) => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, type, message, duration }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   // Tools
   const [activeTool, setActiveTool] = useState<Tool>("brush");
@@ -66,7 +94,6 @@ export function useDashboard() {
   const [spacing, setSpacing] = useState(10);
   const [fillTolerance, setFillTolerance] = useState(35);
   const [gapClose, setGapClose] = useState(true);
-  const [lockLineArt, setLockLineArt] = useState(false);
 
   // Panels
   const [panelOpen, setPanelOpen] = useState({
@@ -87,6 +114,11 @@ export function useDashboard() {
   const [blur, setBlur] = useState(20);
   const [spill, setSpill] = useState(30);
   const [tones, setTones] = useState(45);
+
+  // Advanced tool parameters
+  const [smudgeStrength, setSmudgeStrength] = useState(40);
+  const [dodgeExposure, setDodgeExposure] = useState(40);
+  const [burnExposure, setBurnExposure] = useState(40);
 
   // Modal
   const [showReferenceModal, setShowReferenceModal] = useState(false);
@@ -321,7 +353,13 @@ export function useDashboard() {
   const handleAutoColor = () => {
     setIsColoring(true);
     setTimeout(() => {
-      setFrameStates(Array(uncoloredFiles.length).fill("ai" as FrameState));
+      const newFrameStates = [...frameStates];
+      paintableFrames.forEach((frameIdx) => {
+        if (frameIdx < uncoloredFiles.length) {
+          newFrameStates[frameIdx] = "ai" as FrameState;
+        }
+      });
+      setFrameStates(newFrameStates);
       setIsColoring(false);
     }, 1800);
   };
@@ -344,7 +382,7 @@ const handleImportUncolored = async (
   }
 
   try {
-    const uploadedFrames = [];
+    const uploadedFrames: ImportedFile[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -442,8 +480,267 @@ const handleCustomColoredUpload = (
     setContextMenu(null);
   };
 
+  const toggleFramePaintable = (frameIndex: number) => {
+    setPaintableFrames((prev) => {
+      const next = new Set(prev);
+      if (next.has(frameIndex)) {
+        next.delete(frameIndex);
+      } else {
+        next.add(frameIndex);
+      }
+      return next;
+    });
+  };
+
+  const selectAllFrames = () => {
+    const all = new Set<number>();
+    for (let i = 0; i < uncoloredFiles.length; i++) {
+      all.add(i);
+    }
+    setPaintableFrames(all);
+  };
+
+  const deselectAllFrames = () => {
+    setPaintableFrames(new Set());
+  };
+
   const togglePanel = (k: keyof typeof panelOpen) =>
     setPanelOpen((p) => ({ ...p, [k]: !p[k] }));
+
+  // ── Delete Frame ───────────────────────────────────────────────────────────
+  const deleteFrame = async (frameIndex: number) => {
+    try {
+      const frameId = uncoloredFiles[frameIndex]?.id;
+      
+      // Delete from database
+      if (frameId) {
+        await deleteFrameApi(frameId);
+      }
+
+      // Update local state
+      setUncoloredFiles((prev) => prev.filter((_, i) => i !== frameIndex));
+      setFrameStates((prev) => prev.filter((_, i) => i !== frameIndex));
+      setFramePaints((prev) => {
+        const next = { ...prev };
+        delete next[frameIndex];
+        const reindexed: Record<number, string> = {};
+        Object.entries(next).forEach(([key, val]) => {
+          const idx = parseInt(key);
+          if (idx > frameIndex) reindexed[idx - 1] = val;
+          else if (idx < frameIndex) reindexed[idx] = val;
+        });
+        return reindexed;
+      });
+      setUndoStack((prev) => {
+        const next = { ...prev };
+        delete next[frameIndex];
+        const reindexed: Record<number, string[]> = {};
+        Object.entries(next).forEach(([key, val]) => {
+          const idx = parseInt(key);
+          if (idx > frameIndex) reindexed[idx - 1] = val;
+          else if (idx < frameIndex) reindexed[idx] = val;
+        });
+        return reindexed;
+      });
+      setRedoStack((prev) => {
+        const next = { ...prev };
+        delete next[frameIndex];
+        const reindexed: Record<number, string[]> = {};
+        Object.entries(next).forEach(([key, val]) => {
+          const idx = parseInt(key);
+          if (idx > frameIndex) reindexed[idx - 1] = val;
+          else if (idx < frameIndex) reindexed[idx] = val;
+        });
+        return reindexed;
+      });
+      setFrameRefMap((prev) => {
+        const next = { ...prev };
+        delete next[frameIndex];
+        const reindexed: Record<number, ImportedFile> = {};
+        Object.entries(next).forEach(([key, val]) => {
+          const idx = parseInt(key);
+          if (idx > frameIndex) reindexed[idx - 1] = val;
+          else if (idx < frameIndex) reindexed[idx] = val;
+        });
+        return reindexed;
+      });
+      setPaintableFrames((prev) => {
+        const next = new Set(prev);
+        next.delete(frameIndex);
+        const reindexed = new Set<number>();
+        next.forEach((idx) => {
+          if (idx > frameIndex) reindexed.add(idx - 1);
+          else if (idx < frameIndex) reindexed.add(idx);
+          else reindexed.add(idx);
+        });
+        return reindexed;
+      });
+      if (activeFrame >= frameIndex && activeFrame > 0) {
+        setActiveFrame(activeFrame - 1);
+      } else if (activeFrame === frameIndex && uncoloredFiles.length > 1) {
+        setActiveFrame(0);
+      }
+      addToast("✅ Frame đã xoá thành công", "success");
+    } catch (error) {
+      console.error("Delete frame error:", error);
+      addToast("❌ Lỗi khi xoá frame", "error");
+    }
+  };
+
+  // ── Export Frame ───────────────────────────────────────────────────────────
+  const exportSingleFrame = async (frameIndex: number) => {
+    try {
+      console.log("🔍 exportSingleFrame called with frameIndex:", frameIndex);
+      console.log("📦 uncoloredFiles:", uncoloredFiles);
+      console.log("📸 Frame data:", uncoloredFiles[frameIndex]);
+      
+      addToast("⏳ Đang xuất frame...", "info", 5000);
+      
+      // Lấy hình ảnh đã tô màu nếu có, nếu không lấy hình gốc
+      const paintedUrl = uncoloredFiles[frameIndex]?.paintUrl || uncoloredFiles[frameIndex]?.url;
+      
+      console.log("🖼️ paintedUrl:", paintedUrl);
+      
+      if (!paintedUrl) {
+        console.error("❌ No URL found for frame", frameIndex);
+        addToast("❌ Lỗi: Không tìm thấy ảnh frame", "error");
+        return;
+      }
+      
+      try {
+        console.log("🌐 Fetching from:", paintedUrl);
+        const response = await fetch(paintedUrl);
+        
+        console.log("📡 Fetch response status:", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        console.log("✅ Blob received, size:", blob.size);
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `frame-${frameIndex + 1}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        console.log("✅ Frame downloaded successfully");
+        addToast("✅ Frame đã tải xuống thành công", "success");
+      } catch (err) {
+        console.error(`❌ Failed to fetch frame ${frameIndex}:`, err);
+        addToast("❌ Lỗi khi xuất frame: " + (err as Error).message, "error");
+      }
+    } catch (error) {
+      console.error("❌ Export single frame error:", error);
+      addToast("❌ Lỗi khi xuất frame", "error");
+    }
+  };
+
+  const exportAllFrames = async () => {
+    // Delegate to exportMultipleFrames with all frame indices
+    const allIndices = Array.from({ length: uncoloredFiles.length }, (_, i) => i);
+    await exportMultipleFrames(allIndices);
+  };
+
+  const exportMultipleFrames = async (selectedFrameIndices: number[]) => {
+    try {
+      if (!selectedFrameIndices || selectedFrameIndices.length === 0) {
+        addToast("❌ Vui lòng chọn ít nhất một frame", "error");
+        return;
+      }
+
+      console.log("📋 Selected indices:", selectedFrameIndices);
+      console.log("📦 framePaints keys:", Object.keys(framePaints));
+      console.log("📁 uncoloredFiles length:", uncoloredFiles.length);
+
+      addToast("⏳ Đang chuẩn bị file ZIP...", "info", 10000);
+      const zip = new JSZip();
+      
+      // Fetch all frames in parallel with timeout
+      console.log(`⏱️ Fetching ${selectedFrameIndices.length} frames in parallel...`);
+      const frameBlobsToAdd: Array<{ name: string; blob: Blob }> = [];
+      
+      // Create promises for all frames
+      const fetchPromises = selectedFrameIndices.map(async (frameIdx) => {
+        try {
+          console.log(`\n🔍 Processing frame ${frameIdx}:`);
+          const frame = uncoloredFiles[frameIdx];
+          console.log(`  Frame object:`, frame);
+          console.log(`  framePaints[${frameIdx}]:`, framePaints[frameIdx]);
+          
+          // Get painted frame if available, otherwise original
+          let paintedUrl = framePaints[frameIdx];
+          if (!paintedUrl && frame) {
+            paintedUrl = frame.paintUrl || frame.url;
+          }
+          
+          console.log(`  Final URL:`, paintedUrl?.substring(0, 100) + "...");
+          
+          if (paintedUrl) {
+            let blob: Blob;
+            
+            // Handle data URLs differently
+            if (paintedUrl.startsWith('data:')) {
+              console.log(`  📊 Converting data URL to blob...`);
+              const response = await fetch(paintedUrl);
+              blob = await response.blob();
+            } else {
+              console.log(`  🌐 Fetching from HTTP URL...`);
+              const response = await fetch(paintedUrl);
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+              blob = await response.blob();
+            }
+            
+            console.log(`  ✅ Got blob, size: ${blob.size}`);
+            return {
+              name: `frame-${frameIdx + 1}.png`,
+              blob
+            };
+          } else {
+            console.log(`  ⚠️ No URL found for frame ${frameIdx}`);
+            return null;
+          }
+        } catch (err) {
+          console.error(`  ❌ Failed to fetch frame ${frameIdx + 1}:`, err);
+          addToast(`❌ Lỗi tải frame ${frameIdx + 1}: ${(err as Error).message}`, "error");
+          return null;
+        }
+      });
+      
+      // Wait for all fetches to complete
+      console.log("⏳ Waiting for all frames to fetch...");
+      const results = await Promise.all(fetchPromises);
+      const validFrames = results.filter((r) => r !== null) as Array<{ name: string; blob: Blob }>;
+      
+      console.log(`\n📦 Total frames to add to ZIP: ${validFrames.length}/${selectedFrameIndices.length}`);
+      
+      // Add all blobs to ZIP
+      for (const { name, blob } of validFrames) {
+        console.log(`  Adding to ZIP: ${name}`);
+        zip.file(name, blob);
+      }
+      
+      console.log("📦 Generating ZIP file...");
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+      console.log("📤 Generated ZIP blob, size:", zipBlob.size);
+      
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `project-frames-selected.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast(`✅ Đã tải ${validFrames.length}/${selectedFrameIndices.length} frame xuống`, "success");
+    } catch (error) {
+      console.error('Export multiple frames error:', error);
+      addToast("❌ Lỗi khi xuất file ZIP", "error");
+    }
+  };
 
   return {
     // Frame state
@@ -471,8 +768,6 @@ const handleCustomColoredUpload = (
     spacing, setSpacing,
     fillTolerance, setFillTolerance,
     gapClose, setGapClose,
-    lockLineArt, setLockLineArt,
-
     // Panel state
     panelOpen, togglePanel,
 
@@ -492,6 +787,11 @@ const handleCustomColoredUpload = (
     showReferenceModal, setShowReferenceModal,
     refModalTab, setRefModalTab,
     selectedRefId, setSelectedRefId,
+
+    // Advanced tool parameters
+    smudgeStrength, setSmudgeStrength,
+    dodgeExposure, setDodgeExposure,
+    burnExposure, setBurnExposure,
 
     // Refs
     canvasRef,
@@ -517,5 +817,19 @@ const handleCustomColoredUpload = (
     handleSetFrameRef,
     handleSetFrameAsGlobalRef,
     handleClearFrameRef,
+    toggleFramePaintable,
+    selectAllFrames,
+    deselectAllFrames,
+    paintableFrames,
+    setPaintableFrames,
+    deleteFrame,
+    exportSingleFrame,
+    exportAllFrames,
+    exportMultipleFrames,
+
+    // Toast
+    toasts,
+    removeToast,
+    addToast,
   };
 }

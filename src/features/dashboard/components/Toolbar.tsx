@@ -159,7 +159,9 @@ import {
   RefreshCw,
   Save,
 } from "lucide-react";
+import { useState } from "react";
 import type { useDashboard } from "../hooks/useDashboard";
+import { ExportModal } from "./ExportModal";
 
 type DashboardCtx = ReturnType<typeof useDashboard>;
 
@@ -200,8 +202,6 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
     activeFrame,
     undoStack,
     redoStack,
-    lockLineArt,
-    setLockLineArt,
     isColoring,
     handleAutoColor,
     handleUndo,
@@ -211,6 +211,8 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
 
   const canUndo = (undoStack[activeFrame]?.length ?? 0) > 0;
   const canRedo = (redoStack[activeFrame]?.length ?? 0) > 0;
+
+  const [showExportModal, setShowExportModal] = useState(false);
 
   return (
     <div
@@ -282,27 +284,7 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
           Save
         </button>
 
-        <div style={divider} />
-
-        {/* Lock Line Art */}
-        <button
-          onClick={() => setLockLineArt((v) => !v)}
-          title={lockLineArt ? "Line Art Locked" : "Lock Line Art"}
-          style={{
-            ...baseBtn,
-            padding: "4px 10px",
-            gap: 5,
-            border: lockLineArt ? "1.5px solid #6366F1" : "1px solid #E2E8F0",
-            background: lockLineArt ? "#EEF2FF" : "white",
-            color: lockLineArt ? "#4F46E5" : "#64748B",
-            fontWeight: lockLineArt ? 700 : 500,
-            boxShadow: lockLineArt ? "0 0 0 3px rgba(99,102,241,0.15)" : "none",
-          }}
-        >
-          {lockLineArt ? "Locked" : "Lock Line Art"}
-        </button>
-
-        <div style={divider} />
+         <div style={divider} />
 
         {/* AI Auto Color */}
         <button
@@ -331,6 +313,7 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
 
         {/* Export */}
         <button
+          onClick={() => setShowExportModal(true)}
           style={{
             ...baseBtn,
             border: "none",
@@ -344,6 +327,13 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
           <Download size={11} />
           Export
         </button>
+
+        {/* Export Modal */}
+        <ExportModal
+          ctx={ctx}
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+        />
 
       </div>
     </div>

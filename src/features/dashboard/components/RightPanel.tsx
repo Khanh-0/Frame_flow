@@ -29,7 +29,6 @@ export function RightPanel({ ctx }: RightPanelProps) {
     spacing, setSpacing,
     fillTolerance, setFillTolerance,
     gapClose, setGapClose,
-    lockLineArt, setLockLineArt,
     improveEdge, setImproveEdge,
     preserveLines, setPreserveLines,
     skinTone, setSkinTone,
@@ -41,6 +40,9 @@ export function RightPanel({ ctx }: RightPanelProps) {
     tones, setTones,
     handleColorCurrentFrame,
     handleAutoColor,
+    referenceImage,
+    paintableFrames,
+    addToast,
   } = ctx;
 
   const handleColorChange = (c: string) => {
@@ -90,51 +92,40 @@ export function RightPanel({ ctx }: RightPanelProps) {
               </div>
 
               <button
-                onClick={handleColorCurrentFrame}
+                onClick={() => {
+                  if (!referenceImage) {
+                    addToast("❌ Vui lòng chọn ảnh tham chiếu trước!", "error");
+                    return;
+                  }
+                  if (paintableFrames.size === 0) {
+                    addToast("❌ Vui lòng chọn frame cần tô màu!", "error");
+                    return;
+                  }
+                  handleColorCurrentFrame();
+                  addToast("⏳ Đang tô màu frame...", "info", 5000);
+                }}
                 style={{ width: "100%", padding: "7px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#8B5CF6,#3B82F6)", color: "white", fontWeight: 700, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, boxShadow: "0 2px 8px rgba(139,92,246,0.3)", fontFamily: "'Inter',sans-serif", marginBottom: 5 }}
               >
                 <Wand2 size={12} />AI Color This Frame
               </button>
 
-              <button
-                onClick={handleAutoColor}
-                style={{ width: "100%", padding: "7px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "white", color: "#3B82F6", fontWeight: 600, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'Inter',sans-serif" }}
-              >
-                <Sparkles size={12} />Auto Color Sequence
-              </button>
-
-              {/* Lock Line Art toggle */}
-              <button
-                onClick={() => setLockLineArt((v) => !v)}
-                style={{
-                  width: "100%", padding: "9px 10px", borderRadius: 9,
-                  border: lockLineArt ? "1.5px solid #6366F1" : "1.5px solid #E2E8F0",
-                  background: lockLineArt ? "#EEF2FF" : "#FAFAFA",
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: 9,
-                  fontFamily: "'Inter',sans-serif", transition: "all 0.15s",
-                  boxShadow: lockLineArt ? "0 0 0 3px rgba(99,102,241,0.12)" : "none",
-                  marginTop: 5,
-                }}
-              >
-                <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: lockLineArt ? "#6366F1" : "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
-                  {lockLineArt ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>
-                  )}
-                </div>
-                <div style={{ textAlign: "left", flex: 1 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: lockLineArt ? "#4F46E5" : "#374151" }}>
-                    {lockLineArt ? "Line Art Locked ✓" : "Lock Line Art"}
-                  </div>
-                  <div style={{ fontSize: 9, color: "#94A3B8", marginTop: 1 }}>
-                    {lockLineArt ? "Màu vẽ nằm dưới outline" : "Bảo vệ outline khỏi bị tô đè"}
-                  </div>
-                </div>
-                <div style={{ width: 32, height: 18, borderRadius: 9, flexShrink: 0, background: lockLineArt ? "#6366F1" : "#CBD5E1", position: "relative", transition: "background 0.2s" }}>
-                  <div style={{ position: "absolute", top: 2, left: lockLineArt ? 16 : 2, width: 14, height: 14, borderRadius: "50%", background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.18)", transition: "left 0.2s" }} />
-                </div>
-              </button>
+                <button
+                  onClick={() => {
+                    if (!referenceImage) {
+                      addToast("❌ Vui lòng chọn ảnh tham chiếu trước!", "error");
+                      return;
+                    }
+                    if (paintableFrames.size === 0) {
+                      addToast("❌ Vui lòng chọn frame cần tô màu!", "error");
+                      return;
+                    }
+                    handleAutoColor();
+                    addToast("⏳ Đang tô màu tất cả frame...", "info", 5000);
+                  }}
+                  style={{ width: "100%", padding: "7px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "white", color: "#3B82F6", fontWeight: 600, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'Inter',sans-serif" }}
+                >
+                  <Sparkles size={12} />Auto Color Sequence
+                </button>
             </div>
           )}
         </div>
@@ -263,46 +254,94 @@ export function RightPanel({ ctx }: RightPanelProps) {
                 </>
               )}
 
-              {/* Brush / Pencil / Eraser settings */}
-              {activeTool !== "fill" && activeTool !== "picker" && (
-                <>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1E293B", borderRadius: 8, padding: "10px 12px", border: "1px solid #2D3748" }}>
-                    <div style={{
-                      width: Math.max(6, Math.min(44, brushSize)),
-                      height: Math.max(6, Math.min(44, brushSize)),
-                      borderRadius: activeTool === "pencil" ? "3px" : "50%",
-                      background: activeColor, opacity: opacity / 100, flexShrink: 0,
-                      transition: "all 0.15s",
-                      boxShadow: activeTool === "brush" && hardness < 70 ? `0 0 ${brushSize * (1 - hardness / 100) * 0.5}px ${activeColor}88` : "none",
-                    }} />
-                    <div>
-                      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>
-                        {activeTool === "brush" ? "Smooth Brush" : activeTool === "pencil" ? "Hard Pencil" : "Eraser"}
-                      </div>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{brushSize}px · {opacity}% opacity</div>
-                      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "capitalize" }}>
-                        {blendMode.replace("source-over", "Normal")}
-                        {activeTool === "brush" ? " · Smooth ON" : activeTool === "pencil" ? " · Hard edges" : ""}
-                      </div>
-                    </div>
-                  </div>
-                  <Slider label="Size" value={brushSize} onChange={setBrushSize} min={1} max={100} unit="px" />
-                  <Slider label="Opacity" value={opacity} onChange={setOpacity} />
-                  {activeTool === "brush" && <Slider label="Hardness" value={hardness} onChange={setHardness} />}
-                  <Slider label="Flow" value={flow} onChange={setFlow} />
-                  <Slider label="Spacing" value={spacing} onChange={setSpacing} max={50} unit="%" />
-                  <div>
-                    <div style={{ fontSize: 11, color: "#64748B", fontWeight: 500, marginBottom: 4 }}>Blend Mode</div>
-                    <select
-                      value={blendMode}
-                      onChange={(e) => setBlendMode(e.target.value as typeof blendMode)}
-                      style={{ width: "100%", padding: "5px 8px", borderRadius: 7, border: "1px solid #E2E8F0", background: "white", fontSize: 11, color: "#1E293B", fontFamily: "'Inter',sans-serif", cursor: "pointer" }}
-                    >
-                      {BLEND_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
+               {/* Brush / Pencil / Eraser settings */}
+               {activeTool === "brush" || activeTool === "pencil" || activeTool === "eraser" ? (
+                 <>
+                   <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1E293B", borderRadius: 8, padding: "10px 12px", border: "1px solid #2D3748" }}>
+                     <div style={{
+                       width: Math.max(6, Math.min(44, brushSize)),
+                       height: Math.max(6, Math.min(44, brushSize)),
+                       borderRadius: activeTool === "pencil" ? "3px" : "50%",
+                       background: activeColor, opacity: opacity / 100, flexShrink: 0,
+                       transition: "all 0.15s",
+                       boxShadow: activeTool === "brush" && hardness < 70 ? `0 0 ${brushSize * (1 - hardness / 100) * 0.5}px ${activeColor}88` : "none",
+                     }} />
+                     <div>
+                       <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>
+                         {activeTool === "brush" ? "Smooth Brush" : activeTool === "pencil" ? "Hard Pencil" : "Eraser"}
+                       </div>
+                       <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{brushSize}px · {opacity}% opacity</div>
+                       <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "capitalize" }}>
+                         {blendMode.replace("source-over", "Normal")}
+                         {activeTool === "brush" ? " · Smooth ON" : activeTool === "pencil" ? " · Hard edges" : ""}
+                       </div>
+                     </div>
+                   </div>
+                   <Slider label="Size" value={brushSize} onChange={setBrushSize} min={1} max={100} unit="px" />
+                   <Slider label="Opacity" value={opacity} onChange={setOpacity} />
+                   {activeTool === "brush" && <Slider label="Hardness" value={hardness} onChange={setHardness} />}
+                   <Slider label="Flow" value={flow} onChange={setFlow} />
+                   <Slider label="Spacing" value={spacing} onChange={setSpacing} max={50} unit="%" />
+                   <div>
+                     <div style={{ fontSize: 11, color: "#64748B", fontWeight: 500, marginBottom: 4 }}>Blend Mode</div>
+                     <select
+                       value={blendMode}
+                       onChange={(e) => setBlendMode(e.target.value as typeof blendMode)}
+                       style={{ width: "100%", padding: "5px 8px", borderRadius: 7, border: "1px solid #E2E8F0", background: "white", fontSize: 11, color: "#1E293B", fontFamily: "'Inter',sans-serif", cursor: "pointer" }}
+                     >
+                       {BLEND_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                     </select>
+                   </div>
+                 </>
+               ) : activeTool === "smudge" || activeTool === "dodge" || activeTool === "burn" ? (
+                 <>
+                   <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1E293B", borderRadius: 8, padding: "10px 12px", border: "1px solid #2D3748" }}>
+                     <div style={{
+                       width: Math.max(6, Math.min(44, brushSize)),
+                       height: Math.max(6, Math.min(44, brushSize)),
+                       borderRadius: "50%",
+                       background: activeTool === "smudge" ? "#8B5CF6" : activeTool === "dodge" ? "#FCD34D" : "#A78BFA",
+                       opacity: 0.7,
+                       flexShrink: 0,
+                       boxShadow: `0 0 ${brushSize * 0.3}px ${activeTool === "smudge" ? "#8B5CF6" : activeTool === "dodge" ? "#FCD34D" : "#A78BFA"}66`,
+                     }} />
+                     <div>
+                       <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>
+                         {activeTool === "smudge" ? "Smudge / Blend" : activeTool === "dodge" ? "Dodge / Lighten" : "Burn / Darken"}
+                       </div>
+                       <div style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{brushSize}px · {activeTool === "smudge" ? `${ctx.smudgeStrength}% Strength` : `${ctx.dodgeExposure}% Exposure`}</div>
+                       <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>Non-destructive · Samples all layers</div>
+                     </div>
+                   </div>
+                   <Slider label="Size" value={brushSize} onChange={setBrushSize} min={1} max={100} unit="px" />
+                   {activeTool === "smudge" && (
+                     <Slider label="Strength" value={ctx.smudgeStrength} onChange={ctx.setSmudgeStrength} min={1} max={100} unit="%" />
+                   )}
+                   {(activeTool === "dodge" || activeTool === "burn") && (
+                     <Slider label="Exposure" value={activeTool === "dodge" ? ctx.dodgeExposure : ctx.burnExposure} onChange={activeTool === "dodge" ? ctx.setDodgeExposure : ctx.setBurnExposure} min={1} max={100} unit="%" />
+                   )}
+                   <Slider label="Opacity" value={opacity} onChange={setOpacity} />
+                   <div style={{ background: "#F8FAFF", borderRadius: 7, padding: "8px 10px", border: "1px solid #E2E8F0" }}>
+                     <div style={{ fontSize: 9, color: "#64748B", lineHeight: 1.5 }}>
+                       {activeTool === "smudge" && (
+                         <>
+                           <strong style={{ color: "#374151" }}>Smudge</strong> — Blend pixels from the base layer. Strength controls the intensity of the blur effect.
+                         </>
+                       )}
+                       {activeTool === "dodge" && (
+                         <>
+                           <strong style={{ color: "#374151" }}>Dodge</strong> — Lighten areas non-destructively. Exposure controls how bright the effect is.
+                         </>
+                       )}
+                       {activeTool === "burn" && (
+                         <>
+                           <strong style={{ color: "#374151" }}>Burn</strong> — Darken areas non-destructively. Exposure controls how dark the effect is.
+                         </>
+                       )}
+                     </div>
+                   </div>
+                 </>
+               ) : null}
 
               {/* Color picker hint */}
               {activeTool === "picker" && (

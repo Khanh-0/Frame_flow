@@ -53,3 +53,14 @@ export async function updateFrameColor(
     throw error;
   }
 }
+
+export async function deleteFrame(frameId: string) {
+  const { error } = await supabase
+    .from("frames")
+    .delete()
+    .eq("id", frameId);
+
+  if (error) {
+    throw error;
+  }
+}

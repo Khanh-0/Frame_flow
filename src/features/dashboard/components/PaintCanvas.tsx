@@ -19,11 +19,13 @@ interface PaintCanvasProps {
   blendMode: BlendMode;
   fillTolerance: number;
   gapClose: boolean;
-  lockLineArt: boolean;
   onColorPicked: (c: string) => void;
   onStroke: () => void;
   onBeforeStroke: () => void;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  smudgeStrength?: number;
+  dodgeExposure?: number;
+  burnExposure?: number;
 }
 
 export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(function PaintCanvas({
@@ -36,7 +38,6 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
   blendMode,
   fillTolerance,
   gapClose,
-  lockLineArt,
   onColorPicked,
   onStroke,
   onBeforeStroke,
@@ -50,7 +51,7 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
   const pointBuffer = useRef<{ x: number; y: number }[]>([]);
 
   const paintTarget = (): HTMLCanvasElement =>
-    lockLineArt ? colorRef.current! : canvasRef.current!;
+    canvasRef.current!;
 
   // ── Expose flattened canvas to parent ─────────────────────────────────────
   useImperativeHandle(ref, () => ({
@@ -79,7 +80,7 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
       if (canvasRef.current) ctx.drawImage(canvasRef.current, 0, 0);
       return tmp.toDataURL();
     },
-  }), [lockLineArt]);
+    }), []);
 
   // ── Load background image ──────────────────────────────────────────────────
   useEffect(() => {
@@ -303,6 +304,206 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
   };
 
   // ── Mouse handlers ─────────────────────────────────────────────────────────
+  // ── Tool: Smudge (Blend pixels from base layer) ────────────────────────────
+  const drawSmudge = (
+    ctx: CanvasRenderingContext2D,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    strength: number = 50
+  ) => {
+    const bg = bgRef.current!;
+    const w = bg.width,
+      h = bg.height;
+
+    // Build reference canvas (base layer for sampling)
+    const refCanvas = document.createElement("canvas");
+    refCanvas.width = w;
+    refCanvas.height = h;
+    const refCtx = refCanvas.getContext("2d")!;
+    if (colorRef.current) refCtx.drawImage(colorRef.current, 0, 0);
+    refCtx.drawImage(bg, 0, 0);
+
+    const refData = refCtx.getImageData(0, 0, w, h).data;
+    const brushRadius = Math.ceil(brushSize / 2);
+    const normalizedStrength = Math.min(1, strength / 100);
+
+    // Interpolate along line
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const steps = Math.ceil(dist) + 1;
+
+    for (let step = 0; step < steps; step++) {
+      const t = steps > 1 ? step / steps : 0;
+      const x = Math.round(from.x + dx * t);
+      const y = Math.round(from.y + dy * t);
+
+      // Sample neighborhood and compute average
+      let sumR = 0, sumG = 0, sumB = 0, count = 0;
+      for (let dy2 = -brushRadius; dy2 <= brushRadius; dy2++) {
+        for (let dx2 = -brushRadius; dx2 <= brushRadius; dx2++) {
+          const nx = x + dx2, ny = y + dy2;
+          if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+            const i = (ny * w + nx) * 4;
+            sumR += refData[i];
+            sumG += refData[i + 1];
+            sumB += refData[i + 2];
+            count++;
+          }
+        }
+      }
+
+      if (count === 0) continue;
+      const avgR = Math.round(sumR / count);
+      const avgG = Math.round(sumG / count);
+      const avgB = Math.round(sumB / count);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = (opacity / 100) * normalizedStrength;
+      ctx.fillStyle = `rgb(${avgR},${avgG},${avgB})`;
+      ctx.beginPath();
+      ctx.arc(x, y, brushRadius * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  };
+
+  // ── Tool: Dodge (Lighten) ──────────────────────────────────────────────────
+  const drawDodge = (
+    ctx: CanvasRenderingContext2D,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    exposure: number = 50
+  ) => {
+    const bg = bgRef.current!;
+    const w = bg.width,
+      h = bg.height;
+
+    // Build reference canvas
+    const refCanvas = document.createElement("canvas");
+    refCanvas.width = w;
+    refCanvas.height = h;
+    const refCtx = refCanvas.getContext("2d")!;
+    if (colorRef.current) refCtx.drawImage(colorRef.current, 0, 0);
+    refCtx.drawImage(bg, 0, 0);
+
+    const refData = refCtx.getImageData(0, 0, w, h).data;
+    const paintId = ctx.getImageData(0, 0, w, h);
+    const pd = paintId.data;
+
+    const brushRadius = Math.ceil(brushSize / 2);
+    const normalizedExposure = Math.min(1, exposure / 100);
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const steps = Math.ceil(dist) + 1;
+
+    for (let step = 0; step < steps; step++) {
+      const t = steps > 1 ? step / steps : 0;
+      const cx = Math.round(from.x + dx * t);
+      const cy = Math.round(from.y + dy * t);
+
+      for (let dy2 = -brushRadius; dy2 <= brushRadius; dy2++) {
+        for (let dx2 = -brushRadius; dx2 <= brushRadius; dx2++) {
+          const x = cx + dx2, y = cy + dy2;
+          if (x >= 0 && x < w && y >= 0 && y < h) {
+            const idx = (y * w + x) * 4;
+
+            // Sample base layer brightness
+            const baseR = refData[idx];
+            const baseG = refData[idx + 1];
+            const baseB = refData[idx + 2];
+            const baseBrightness = (baseR + baseG + baseB) / 3;
+
+            // Lighten: boost brightness (Overlay blend logic)
+            const factor = 1 + normalizedExposure * 0.5;
+            const newR = Math.min(255, Math.round(baseR * factor));
+            const newG = Math.min(255, Math.round(baseG * factor));
+            const newB = Math.min(255, Math.round(baseB * factor));
+
+            // Blend onto paint layer with soft opacity
+            const blendAlpha = (opacity / 100) * normalizedExposure * 0.6;
+            pd[idx] = Math.round(pd[idx] * (1 - blendAlpha) + newR * blendAlpha);
+            pd[idx + 1] = Math.round(pd[idx + 1] * (1 - blendAlpha) + newG * blendAlpha);
+            pd[idx + 2] = Math.round(pd[idx + 2] * (1 - blendAlpha) + newB * blendAlpha);
+            pd[idx + 3] = Math.max(pd[idx + 3], Math.round(blendAlpha * 255));
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(paintId, 0, 0);
+  };
+
+  // ── Tool: Burn (Darken) ────────────────────────────────────────────────────
+  const drawBurn = (
+    ctx: CanvasRenderingContext2D,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    exposure: number = 50
+  ) => {
+    const bg = bgRef.current!;
+    const w = bg.width,
+      h = bg.height;
+
+    // Build reference canvas
+    const refCanvas = document.createElement("canvas");
+    refCanvas.width = w;
+    refCanvas.height = h;
+    const refCtx = refCanvas.getContext("2d")!;
+    if (colorRef.current) refCtx.drawImage(colorRef.current, 0, 0);
+    refCtx.drawImage(bg, 0, 0);
+
+    const refData = refCtx.getImageData(0, 0, w, h).data;
+    const paintId = ctx.getImageData(0, 0, w, h);
+    const pd = paintId.data;
+
+    const brushRadius = Math.ceil(brushSize / 2);
+    const normalizedExposure = Math.min(1, exposure / 100);
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const steps = Math.ceil(dist) + 1;
+
+    for (let step = 0; step < steps; step++) {
+      const t = steps > 1 ? step / steps : 0;
+      const cx = Math.round(from.x + dx * t);
+      const cy = Math.round(from.y + dy * t);
+
+      for (let dy2 = -brushRadius; dy2 <= brushRadius; dy2++) {
+        for (let dx2 = -brushRadius; dx2 <= brushRadius; dx2++) {
+          const x = cx + dx2, y = cy + dy2;
+          if (x >= 0 && x < w && y >= 0 && y < h) {
+            const idx = (y * w + x) * 4;
+
+            // Sample base layer
+            const baseR = refData[idx];
+            const baseG = refData[idx + 1];
+            const baseB = refData[idx + 2];
+
+            // Darken: reduce brightness (Overlay blend logic)
+            const factor = 1 - normalizedExposure * 0.5;
+            const newR = Math.round(baseR * factor);
+            const newG = Math.round(baseG * factor);
+            const newB = Math.round(baseB * factor);
+
+            // Blend onto paint layer
+            const blendAlpha = (opacity / 100) * normalizedExposure * 0.6;
+            pd[idx] = Math.round(pd[idx] * (1 - blendAlpha) + newR * blendAlpha);
+            pd[idx + 1] = Math.round(pd[idx + 1] * (1 - blendAlpha) + newG * blendAlpha);
+            pd[idx + 2] = Math.round(pd[idx + 2] * (1 - blendAlpha) + newB * blendAlpha);
+            pd[idx + 3] = Math.max(pd[idx + 3], Math.round(blendAlpha * 255));
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(paintId, 0, 0);
+  };
+
   const onMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     const pos = getPos(e);
@@ -325,6 +526,8 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
     onBeforeStroke();
     if (tool === "pencil" || tool === "eraser") {
       drawPencil(ctx, pos, pos);
+    } else if (tool === "smudge" || tool === "dodge" || tool === "burn") {
+      // These tools are handled in onMouseMove
     } else {
       drawBrushSmooth(ctx, [pos, pos]);
     }
@@ -338,6 +541,15 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
 
     if (tool === "pencil") {
       drawPencil(ctx, lastPos.current, pos);
+      lastPos.current = pos;
+    } else if (tool === "smudge") {
+      drawSmudge(ctx, lastPos.current, pos);
+      lastPos.current = pos;
+    } else if (tool === "dodge") {
+      drawDodge(ctx, lastPos.current, pos);
+      lastPos.current = pos;
+    } else if (tool === "burn") {
+      drawBurn(ctx, lastPos.current, pos);
       lastPos.current = pos;
     } else {
       pointBuffer.current.push(pos);
@@ -385,18 +597,17 @@ export const PaintCanvas = forwardRef<PaintCanvasHandle, PaintCanvasProps>(funct
         borderRadius: 14,
       }}
     >
-      {/* Layer 1 — Color layer (Lock ON only) */}
-      <canvas
-        ref={colorRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          display: lockLineArt ? "block" : "none",
-        }}
-      />
+       {/* Layer 1 — Color layer */}
+       <canvas
+         ref={colorRef}
+         style={{
+           position: "absolute",
+           inset: 0,
+           width: "100%",
+           height: "100%",
+           objectFit: "contain",
+         }}
+       />
       {/* Layer 2 — Line art / background */}
       <canvas
         ref={bgRef}
