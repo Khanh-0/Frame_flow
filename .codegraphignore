@@ -1,0 +1,15 @@
+# Codegraph ignore patterns
+# Exclude build output
+dist/
+
+# Exclude guidelines
+guidelines/
+
+# Exclude codegraph database
+.codegraph/
+
+# Common exclusions
+node_modules/
+.git/
+.env
+*.log
