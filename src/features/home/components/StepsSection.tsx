@@ -2,13 +2,13 @@ import { STEPS } from "../constants/homeData";
 
 export function StepsSection() {
   return (
-    <section style={{ background: "#F8FAFF", padding: "80px 40px", marginBottom: 120 }}>
+    <section style={{ background: "linear-gradient(135deg, #0B0B14 0%, #11111B 100%)", padding: "80px 40px", marginBottom: 120 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div className="text-center mb-16">
-          <h2 style={{ fontSize: 36, fontWeight: 800, color: "#1E293B", letterSpacing: "-1px", marginBottom: 12 }}>
+          <h2 style={{ fontSize: 36, fontWeight: 800, color: "#F5F3FF", letterSpacing: "-1px", marginBottom: 12 }}>
             How It Works
           </h2>
-          <p style={{ fontSize: 16, color: "#64748B" }}>
+          <p style={{ fontSize: 16, color: "#AAB2D5" }}>
             From raw sketches to fully colored animations in three simple steps.
           </p>
         </div>
@@ -20,7 +20,7 @@ export function StepsSection() {
               {idx < STEPS.length - 1 && (
                 <div
                   className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px"
-                  style={{ background: "linear-gradient(90deg, #CBD5E1, transparent)" }}
+                  style={{ background: "linear-gradient(90deg, #2A2A40, transparent)" }}
                 />
               )}
 
@@ -28,8 +28,8 @@ export function StepsSection() {
               <div
                 style={{
                   width: 64, height: 64, borderRadius: "50%",
-                  background: `${step.color}15`,
-                  border: `2px solid ${step.color}30`,
+                  background: `${step.color}20`,
+                  border: `2px solid ${step.color}40`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   marginBottom: 20, position: "relative", zIndex: 1,
                 }}
@@ -45,10 +45,10 @@ export function StepsSection() {
               >
                 STEP {step.number}
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1E293B", marginBottom: 10 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F5F3FF", marginBottom: 10 }}>
                 {step.title}
               </h3>
-              <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+              <p style={{ fontSize: 14, color: "#AAB2D5", lineHeight: 1.7 }}>
                 {step.description}
               </p>
             </div>

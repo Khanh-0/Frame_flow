@@ -178,19 +178,19 @@ const baseBtn: React.CSSProperties = {
   gap: 4,
   padding: "5px 9px",
   borderRadius: 6,
-  border: "1px solid #E2E8F0",
-  background: "white",
+  border: "1px solid #2A2A40",
+  background: "#181827",
   cursor: "pointer",
   fontSize: 11,
   fontWeight: 500,
-  color: "#475569",
+  color: "#AAB2D5",
   fontFamily: "'Inter', sans-serif",
 };
 
 const divider: React.CSSProperties = {
   width: 1,
   height: 18,
-  background: "#E2E8F0",
+  background: "#2A2A40",
   flexShrink: 0,
   margin: "0 2px",
 };
@@ -223,20 +223,20 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
         padding: "0 18px",
         height: 52,
         flexShrink: 0,
-        background: "white",
-        borderBottom: "1px solid #E2E8F0",
+        background: "linear-gradient(180deg, #10101A 0%, #0B0B14 100%)",
+        borderBottom: "1px solid #2A2A40",
       }}
     >
       {/* ── Breadcrumb ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
         <Link
           to="/projects"
-          style={{ fontSize: 12, color: "#94A3B8", textDecoration: "none" }}
+          style={{ fontSize: 12, color: "#AAB2D5", textDecoration: "none" }}
         >
           Projects
         </Link>
-        <ChevronRight size={12} color="#CBD5E1" />
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#1E293B" }}>
+        <ChevronRight size={12} color="#7E86A4" />
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#F5F3FF" }}>
           {projectName || "Untitled Project"}
         </span>
       </div>
@@ -293,7 +293,7 @@ export function Toolbar({ ctx, projectName }: ToolbarProps) {
             ...baseBtn,
             border: "none",
             padding: "5px 11px",
-            background: isColoring ? "#E0E7FF" : "#3B82F6",
+            background: isColoring ? "#E0E7FF" : "#5b34ec",
             color: isColoring ? "#3B82F6" : "white",
             fontWeight: 600,
             boxShadow: "0 2px 6px rgba(59,130,246,0.25)",

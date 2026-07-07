@@ -6,10 +6,10 @@ export function PricingSection() {
   return (
     <section id="pricing" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 40px 120px" }}>
       <div className="text-center mb-16">
-        <h2 style={{ fontSize: 36, fontWeight: 800, color: "#1E293B", letterSpacing: "-1px", marginBottom: 12 }}>
+        <h2 style={{ fontSize: 36, fontWeight: 800, color: "#F5F3FF", letterSpacing: "-1px", marginBottom: 12 }}>
           Simple, Transparent Pricing
         </h2>
-        <p style={{ fontSize: 16, color: "#64748B" }}>
+        <p style={{ fontSize: 16, color: "#AAB2D5" }}>
           Start free, upgrade when you need more power.
         </p>
       </div>
@@ -19,25 +19,25 @@ export function PricingSection() {
         {/* Free Plan */}
         <div
           style={{
-            background: "white", borderRadius: 20, padding: 40,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid #E2E8F0",
+            background: "#181827", borderRadius: 20, padding: 40,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.15)", border: "1px solid #2A2A40",
           }}
         >
           <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#7E86A4", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
               Free Plan
             </p>
             <div className="flex items-baseline gap-1">
-              <span style={{ fontSize: 40, fontWeight: 800, color: "#1E293B" }}>$0</span>
-              <span style={{ fontSize: 14, color: "#94A3B8" }}>/month</span>
+              <span style={{ fontSize: 40, fontWeight: 800, color: "#F5F3FF" }}>$0</span>
+              <span style={{ fontSize: 14, color: "#AAB2D5" }}>/month</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 mb-8">
             {FREE_PLAN_FEATURES.map((f) => (
               <div key={f} className="flex items-center gap-2">
-                <Check size={16} color="#94A3B8" />
-                <span style={{ fontSize: 14, color: "#475569" }}>{f}</span>
+                <Check size={16} color="#00D084" />
+                <span style={{ fontSize: 14, color: "#AAB2D5" }}>{f}</span>
               </div>
             ))}
           </div>
@@ -46,8 +46,9 @@ export function PricingSection() {
             to="/signup"
             style={{
               display: "block", textAlign: "center", padding: "12px",
-              borderRadius: 10, border: "1.5px solid #E2E8F0",
-              color: "#475569", fontWeight: 600, fontSize: 14, textDecoration: "none",
+              borderRadius: 10, border: "1.5px solid #2A2A40",
+              color: "#AAB2D5", fontWeight: 600, fontSize: 14, textDecoration: "none",
+              background: "#161622",
             }}
           >
             Get Started Free
@@ -57,10 +58,10 @@ export function PricingSection() {
         {/* Pro Plan */}
         <div
           style={{
-            background: "linear-gradient(135deg, #EFF6FF, #F5F3FF)",
+            background: "linear-gradient(135deg, rgba(124,58,237,0.1), rgba(255,46,154,0.1))",
             borderRadius: 20, padding: 40,
-            boxShadow: "0 10px 40px rgba(59,130,246,0.15)",
-            border: "2px solid #3B82F6",
+            boxShadow: "0 10px 40px rgba(168,85,247,0.2)",
+            border: "2px solid #7C3AED",
             position: "relative", overflow: "hidden",
           }}
         >
@@ -68,7 +69,7 @@ export function PricingSection() {
           <div
             style={{
               position: "absolute", top: 20, right: 20,
-              background: "#3B82F6", color: "white",
+              background: "linear-gradient(135deg, #7C3AED 0%, #FF2E9A 100%)", color: "white",
               fontSize: 11, fontWeight: 700,
               padding: "4px 10px", borderRadius: 100, letterSpacing: 0.5,
             }}
@@ -77,20 +78,20 @@ export function PricingSection() {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#3B82F6", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#A855F7", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
               Pro Plan
             </p>
             <div className="flex items-baseline gap-1">
-              <span style={{ fontSize: 40, fontWeight: 800, color: "#1E293B" }}>$20</span>
-              <span style={{ fontSize: 14, color: "#94A3B8" }}>/month</span>
+              <span style={{ fontSize: 40, fontWeight: 800, color: "#F5F3FF" }}>$20</span>
+              <span style={{ fontSize: 14, color: "#AAB2D5" }}>/month</span>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 mb-8">
             {PRO_PLAN_FEATURES.map((f) => (
               <div key={f} className="flex items-center gap-2">
-                <Check size={16} color="#3B82F6" strokeWidth={2.5} />
-                <span style={{ fontSize: 14, color: "#1E293B", fontWeight: 500 }}>{f}</span>
+                <Check size={16} color="#FF2E9A" strokeWidth={2.5} />
+                <span style={{ fontSize: 14, color: "#F5F3FF", fontWeight: 500 }}>{f}</span>
               </div>
             ))}
           </div>
@@ -99,10 +100,10 @@ export function PricingSection() {
             to="/signup"
             className="flex items-center justify-center gap-2"
             style={{
-              background: "#3B82F6", color: "white",
+              background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 25%, #FF2E9A 75%, #FF8A34 100%)", color: "white",
               padding: "12px", borderRadius: 10,
               fontWeight: 700, fontSize: 14, textDecoration: "none",
-              boxShadow: "0 4px 16px rgba(59,130,246,0.35)",
+              boxShadow: "0 8px 30px rgba(168,85,247,0.35)",
             }}
           >
             Get Pro

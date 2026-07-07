@@ -212,7 +212,7 @@ export function Dashboard() {
 
   return (
     <div
-      style={{ height: "100vh", background: "#F1F5F9", display: "flex", fontFamily: "'Inter',sans-serif", overflow: "hidden" }}
+      style={{ height: "100vh", background: "linear-gradient(135deg, #0B0B14 0%, #10101A 100%)", display: "flex", fontFamily: "'Inter',sans-serif", overflow: "hidden" }}
       onMouseDown={() => setContextMenu(null)}
     >
       {/* Hidden file inputs */}
@@ -228,7 +228,7 @@ export function Dashboard() {
 
         <div style={{ flex: 1, padding: "12px 12px 0", display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
           {/* Canvas area */}
-          <div style={{ flex: 1, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", background: "#0F172A", position: "relative", minHeight: 0, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ flex: 1, boxShadow: "0 8px 24px rgba(0,0,0,0.3)", background: "#181827", position: "relative", minHeight: 0, borderRadius: 14, overflow: "hidden", border: "1px solid #2A2A40" }}>
             <PaintCanvas
               ref={paintCanvasRef}
               imageUrl={uncoloredFiles[activeFrame]?.url ?? null}

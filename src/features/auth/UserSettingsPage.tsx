@@ -24,8 +24,8 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 
 const S = {
   card: {
-    background: "white",
-    border: "1px solid #E8EFFE",
+    background: "#181827",
+    border: "1px solid #2A2A40",
     borderRadius: 16,
     padding: "24px 28px",
     marginBottom: 20,
@@ -34,29 +34,30 @@ const S = {
     display: "block",
     fontSize: 13,
     fontWeight: 600,
-    color: "#374151",
+    color: "#AAB2D5",
     marginBottom: 6,
   } as React.CSSProperties,
   input: {
     width: "100%",
     padding: "10px 14px",
     borderRadius: 10,
-    border: "1.5px solid #E2E8F0",
+    border: "1.5px solid #2A2A40",
     fontSize: 14,
-    color: "#1E293B",
+    color: "#FFFFFF",
     outline: "none",
     fontFamily: "'DM Sans', sans-serif",
     boxSizing: "border-box",
+    background: "#11111B",
   } as React.CSSProperties,
   sectionTitle: {
     fontSize: 15,
     fontWeight: 700,
-    color: "#1E293B",
+    color: "#F5F3FF",
     marginBottom: 4,
   } as React.CSSProperties,
   sectionDesc: {
     fontSize: 13,
-    color: "#64748B",
+    color: "#AAB2D5",
     marginBottom: 20,
   } as React.CSSProperties,
 };
@@ -574,17 +575,13 @@ export function UserSettingsPage() {
     <div style={{
       minHeight: "100vh",
       fontFamily: "'DM Sans', 'Inter', sans-serif",
-      background: "#F4F8FF",
-      backgroundImage: `
-        radial-gradient(circle at 15% 10%, rgba(59,130,246,0.07) 0%, transparent 45%),
-        radial-gradient(circle at 85% 90%, rgba(139,92,246,0.06) 0%, transparent 40%)
-      `,
+      background: "linear-gradient(135deg, #0B0B14 0%, #10101A 100%)",
     }}>
       {/* Top bar */}
       <div style={{
         position: "sticky", top: 0, zIndex: 40,
-        background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #E8EFFE", height: 60,
+        background: "rgba(11,11,20,0.92)", backdropFilter: "blur(12px)",
+        borderBottom: "1px solid #2A2A40", height: 60,
         display: "flex", alignItems: "center", padding: "0 32px", justifyContent: "space-between",
       }}>
         <button
@@ -613,25 +610,26 @@ export function UserSettingsPage() {
         {/* Sidebar */}
         <aside style={{ width: 220, flexShrink: 0 }}>
           {/* Mini profile */}
-          <div style={{ background: "white", border: "1px solid #E8EFFE", borderRadius: 16, padding: "20px 16px", marginBottom: 12, textAlign: "center" }}>
+          <div style={{ background: "#181827", border: "1px solid #2A2A40", borderRadius: 16, padding: "20px 16px", marginBottom: 12, textAlign: "center" }}>
             <div style={{
               width: 56, height: 56, borderRadius: "50%",
-              background: "linear-gradient(135deg, #3B82F6, #8B5CF6)",
+              background: "linear-gradient(135deg, #7C3AED, #FF2E9A)",
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "white", fontSize: 22, fontWeight: 700,
               margin: "0 auto 10px",
+              boxShadow: "0 4px 16px rgba(168,85,247,0.3)",
             }}>
               {initials}
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{(user as any)?.fullName ?? "User"}</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2, wordBreak: "break-all" }}>{user.email}</div>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, background: "#EFF6FF", color: "#3B82F6", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#F5F3FF" }}>{(user as any)?.fullName ?? "User"}</div>
+            <div style={{ fontSize: 12, color: "#AAB2D5", marginTop: 2, wordBreak: "break-all" }}>{user.email}</div>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, background: "rgba(124,58,237,0.15)", color: "#A855F7", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, border: "1px solid rgba(168,85,247,0.3)" }}>
               ✦ Free plan
             </span>
           </div>
 
           {/* Nav */}
-          <nav style={{ background: "white", border: "1px solid #E8EFFE", borderRadius: 16, overflow: "hidden" }}>
+          <nav style={{ background: "#181827", border: "1px solid #2A2A40", borderRadius: 16, overflow: "hidden" }}>
             {TABS.map(({ id, label, icon: Icon }, i) => (
               <button
                 key={id}
@@ -639,12 +637,12 @@ export function UserSettingsPage() {
                 style={{
                   display: "flex", alignItems: "center", gap: 10,
                   width: "100%", padding: "12px 16px",
-                  background: activeTab === id ? "#EFF6FF" : "transparent",
+                  background: activeTab === id ? "rgba(255,46,154,0.1)" : "transparent",
                   border: "none",
-                  borderLeft: activeTab === id ? "3px solid #3B82F6" : "3px solid transparent",
-                  borderBottom: i < TABS.length - 1 ? "1px solid #F1F5F9" : "none",
+                  borderLeft: activeTab === id ? "3px solid #FF2E9A" : "3px solid transparent",
+                  borderBottom: i < TABS.length - 1 ? "1px solid #2A2A40" : "none",
                   cursor: "pointer", textAlign: "left",
-                  color: activeTab === id ? "#3B82F6" : "#475569",
+                  color: activeTab === id ? "#FF2E9A" : "#AAB2D5",
                   fontSize: 13, fontWeight: activeTab === id ? 700 : 500,
                   transition: "all 0.12s",
                 }}
@@ -659,10 +657,10 @@ export function UserSettingsPage() {
 
         {/* Content */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1E293B", marginBottom: 6 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#F5F3FF", marginBottom: 6 }}>
             {TABS.find(t => t.id === activeTab)?.label}
           </h1>
-          <p style={{ fontSize: 14, color: "#64748B", marginBottom: 24 }}>
+          <p style={{ fontSize: 14, color: "#AAB2D5", marginBottom: 24 }}>
             {activeTab === "account"       && "Manage your profile and personal information."}
             {activeTab === "appearance"    && "Customize how FrameFlow looks and feels."}
             {activeTab === "notifications" && "Control which alerts and updates you receive."}

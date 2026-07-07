@@ -16,9 +16,9 @@ export function Navbar() {
       className="sticky top-0 z-50 w-full border-b"
       style={{
         height: "72px",
-        background: "rgba(255,255,255,0.92)",
+        background: "rgba(11,11,20,0.92)",
         backdropFilter: "blur(12px)",
-        borderColor: "rgba(0,0,0,0.06)",
+        borderColor: "#2A2A40",
       }}
     >
       <div
@@ -29,7 +29,7 @@ export function Navbar() {
         <Link to="/" className="flex items-center gap-2 no-underline">
           <div
             className="flex items-center justify-center rounded-lg"
-            style={{ width: 34, height: 34, background: "#3B82F6" }}
+            style={{ width: 34, height: 34, background: "linear-gradient(135deg, #7C3AED 0%, #FF2E9A 100%)" }}
           >
             <Zap size={18} color="white" fill="white" />
           </div>
@@ -38,7 +38,7 @@ export function Navbar() {
               fontFamily: "'Inter', sans-serif",
               fontWeight: 700,
               fontSize: 22,
-              color: "#1E293B",
+              color: "#F5F3FF",
               letterSpacing: "-0.3px",
             }}
           >
@@ -56,10 +56,10 @@ export function Navbar() {
                 fontFamily: "'Inter', sans-serif",
                 fontSize: 15,
                 fontWeight: 500,
-                color: "#475569",
+                color: "#AAB2D5",
                 textDecoration: "none",
               }}
-              className="hover:text-blue-500 transition-colors"
+              className="hover:text-pink-400 transition-colors"
             >
               {item.name}
             </a>
@@ -74,15 +74,15 @@ export function Navbar() {
               fontFamily: "'Inter', sans-serif",
               fontSize: 14,
               fontWeight: 500,
-              color: "#475569",
+              color: "#AAB2D5",
               padding: "8px 16px",
               borderRadius: 10,
-              border: "1.5px solid #E2E8F0",
+              border: "1.5px solid #2A2A40",
               textDecoration: "none",
-              background: "transparent",
+              background: "#161622",
               transition: "all 0.15s",
             }}
-            className="hover:border-blue-300 hover:text-blue-500"
+            className="hover:border-pink-400 hover:text-pink-400"
           >
             Sign In
           </Link>
@@ -95,12 +95,12 @@ export function Navbar() {
               color: "white",
               padding: "8px 20px",
               borderRadius: 10,
-              background: "#3B82F6",
+              background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 25%, #FF2E9A 75%, #FF8A34 100%)",
               textDecoration: "none",
               height: 40,
               display: "flex",
               alignItems: "center",
-              boxShadow: "0 2px 8px rgba(59,130,246,0.3)",
+              boxShadow: "0 4px 16px rgba(168,85,247,0.35)",
             }}
           >
             Sign Up

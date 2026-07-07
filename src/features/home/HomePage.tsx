@@ -8,7 +8,7 @@ import { FooterSection }   from "./components/FooterSection";
 
 export function HomePage() {
   return (
-    <div style={{ background: "linear-gradient(180deg, #F4F8FF 0%, #FFFFFF 30%)", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: "linear-gradient(180deg, #0B0B14 0%, #10101A 50%)", fontFamily: "'Inter', sans-serif" }}>
       <Navbar />
       <HeroSection />
       <FeaturesSection />

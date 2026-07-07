@@ -10,8 +10,8 @@ import { updateProfileData } from "./services/auth.api";
 
 const S = {
   card: {
-    background: "white",
-    border: "1px solid #E8EFFE",
+    background: "#181827",
+    border: "1px solid #2A2A40",
     borderRadius: 12,
     padding: "20px",
     marginBottom: 16,
@@ -19,11 +19,13 @@ const S = {
   input: {
     padding: "10px 14px",
     borderRadius: 8,
-    border: "1.5px solid #E2E8F0",
+    border: "1.5px solid #2A2A40",
     fontSize: 14,
     outline: "none",
     fontFamily: "'DM Sans', sans-serif",
     width: "100%",
+    background: "#11111B",
+    color: "#FFFFFF",
   } as React.CSSProperties,
   button: {
     padding: "10px 20px",
@@ -37,7 +39,7 @@ const S = {
   label: {
     fontSize: 12,
     fontWeight: 600,
-    color: "#374151",
+    color: "#AAB2D5",
     display: "block" as const,
     marginBottom: 8,
   } as React.CSSProperties,
@@ -99,7 +101,7 @@ export function ProjectSettingsPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#F4F8FF",
+        background: "linear-gradient(135deg, #0B0B14 0%, #10101A 100%)",
         fontFamily: "'DM Sans', 'Inter', sans-serif",
       }}
     >
@@ -109,9 +111,9 @@ export function ProjectSettingsPage() {
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "rgba(255,255,255,0.9)",
+          background: "rgba(11,11,20,0.92)",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid #E8EFFE",
+          borderBottom: "1px solid #2A2A40",
           height: 60,
           display: "flex",
           alignItems: "center",
@@ -135,7 +137,7 @@ export function ProjectSettingsPage() {
         >
           <ArrowLeft size={16} /> Back
         </button>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#1E293B" }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#F5F3FF" }}>
           Project Settings
         </div>
         <button
@@ -174,10 +176,10 @@ export function ProjectSettingsPage() {
               }}
             />
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#1E293B" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#F5F3FF" }}>
                 {fullName || "No name"}
               </div>
-              <div style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>
+              <div style={{ fontSize: 14, color: "#AAB2D5", marginTop: 4 }}>
                 {user.email}
               </div>
               <div
@@ -202,7 +204,7 @@ export function ProjectSettingsPage() {
 
         {/* Edit Profile Section */}
         <div style={S.card}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#1E293B", marginBottom: 20 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#F5F3FF", marginBottom: 20 }}>
             Edit Profile
           </div>
 
@@ -302,88 +304,88 @@ export function ProjectSettingsPage() {
 
         {/* View Only Section */}
         <div style={S.card}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1E293B", marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#F5F3FF", marginBottom: 16 }}>
             Account Information (Read-only)
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#7E86A4", marginBottom: 6 }}>
                 Email
               </div>
               <div
                 style={{
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid #2A2A40",
                   fontSize: 13,
-                  color: "#374151",
-                  background: "#F9FAFB",
+                  color: "#AAB2D5",
+                  background: "#11111B",
                 }}
               >
                 {user.email}
               </div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "#7E86A4", marginTop: 4 }}>
                 Cannot be changed
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#7E86A4", marginBottom: 6 }}>
                 Subscription Plan
               </div>
               <div
                 style={{
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid #2A2A40",
                   fontSize: 13,
-                  color: "#374151",
-                  background: "#F9FAFB",
+                  color: "#AAB2D5",
+                  background: "#11111B",
                   textTransform: "capitalize",
                 }}
               >
                 {user.subscription_plan}
               </div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "#7E86A4", marginTop: 4 }}>
                 Contact support to upgrade
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#7E86A4", marginBottom: 6 }}>
                 Credits
               </div>
               <div
                 style={{
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid #2A2A40",
                   fontSize: 13,
-                  color: "#3B82F6",
-                  background: "#F0F9FF",
+                  color: "#A855F7",
+                  background: "rgba(168,85,247,0.1)",
                   fontWeight: 600,
                 }}
               >
                 {user.credits} credits
               </div>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "#7E86A4", marginTop: 4 }}>
                 Earn or purchase
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#7E86A4", marginBottom: 6 }}>
                 Account Type
               </div>
               <div
                 style={{
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid #2A2A40",
                   fontSize: 13,
-                  color: user.role === "admin" ? "#DC2626" : "#374151",
-                  background: user.role === "admin" ? "#FEE2E2" : "#F9FAFB",
+                  color: user.role === "admin" ? "#FF2E9A" : "#AAB2D5",
+                  background: user.role === "admin" ? "rgba(255,46,154,0.1)" : "#11111B",
                   textTransform: "capitalize",
                   fontWeight: user.role === "admin" ? 600 : 400,
                 }}
@@ -398,17 +400,17 @@ export function ProjectSettingsPage() {
         <div
           style={{
             ...S.card,
-            background: "#EFF6FF",
-            border: "1px solid #BFDBFE",
+            background: "rgba(168,85,247,0.1)",
+            border: "1px solid rgba(168,85,247,0.3)",
           }}
         >
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#1E60AA", marginBottom: 8 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#A855F7", marginBottom: 8 }}>
             💡 Tips
           </div>
           <ul
             style={{
               fontSize: 13,
-              color: "#1E60AA",
+              color: "#A855F7",
               paddingLeft: 20,
               lineHeight: "1.6",
             }}

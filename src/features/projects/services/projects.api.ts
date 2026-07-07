@@ -119,23 +119,92 @@
 import { supabase } from "@/lib/supabase";
 
 export async function fetchProjects() {
+  // Fetch projects with aggregated frame data
   const {
-    data,
-    error,
+    data: projectsData,
+    error: projectsError,
   } = await supabase
     .from("projects")
-    .select("*")
+    .select(`
+      *,
+      frames (
+        frame_index,
+        source_image_url,
+        colored_image_url,
+        is_keyframe
+      )
+    `)
     .order("created_at", {
       ascending: false,
     });
 
-  if (error) {
-    throw error;
+  if (projectsError) {
+    throw projectsError;
   }
 
+  // Transform data to include calculated fields and proper thumbnail
+  const enrichedProjects = (projectsData ?? []).map((project: any) => {
+    const frames = project.frames || [];
+    
+    // Calculate real frame count
+    const frameCount = frames.length;
+    
+    // Calculate colored frames (where colored_image_url exists)
+    const coloredCount = frames.filter((f: any) => f.colored_image_url).length;
+    
+    // Determine thumbnail based on priority
+    let thumbnail = project.thumbnail_url;
+    
+    if (!thumbnail && frames.length > 0) {
+      // Priority 2: keyframe
+      const keyframe = frames.find((f: any) => f.is_keyframe);
+      if (keyframe) {
+        thumbnail = keyframe.colored_image_url || keyframe.source_image_url;
+      }
+      
+      // Priority 3: first frame
+      if (!thumbnail) {
+        const sortedFrames = [...frames].sort((a: any, b: any) => a.frame_index - b.frame_index);
+        const firstFrame = sortedFrames[0];
+        if (firstFrame) {
+          thumbnail = firstFrame.colored_image_url || firstFrame.source_image_url;
+        }
+      }
+      
+      // Priority 4: latest frame (already sorted by frame_index in previous step)
+      if (!thumbnail && frames.length > 0) {
+        const latestFrame = frames[frames.length - 1];
+        thumbnail = latestFrame.colored_image_url || latestFrame.source_image_url;
+      }
+    }
+    
+    // Calculate status based on colored progress
+    let status: "draft" | "in-progress" | "complete" = "draft";
+    if (frameCount > 0) {
+      const progress = (coloredCount / frameCount) * 100;
+      if (progress === 100) {
+        status = "complete";
+      } else if (progress > 0) {
+        status = "in-progress";
+      }
+    }
+    
+    // Remove the raw frames array and return clean project data
+    const { frames: _, ...projectWithoutFrames } = project;
+    
+    return {
+      ...projectWithoutFrames,
+      frames: frameCount,
+      coloredFrames: coloredCount,
+      thumbnail: thumbnail || "",
+      status: project.status || status,
+      lastEdited: project.updated_at || project.created_at,
+    };
+  });
+
   return {
-    data: data ?? [],
-    total: data?.length ?? 0,
+    data: enrichedProjects,
+    total: enrichedProjects.length,
   };
 }
 

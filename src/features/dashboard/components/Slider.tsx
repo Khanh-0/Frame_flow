@@ -16,8 +16,8 @@ export function Slider({
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-        <span style={{ fontSize: 11, color: "#64748B", fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 10, color: "#94A3B8", fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ fontSize: 11, color: "#AAB2D5", fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 10, color: "#7E86A4", fontVariantNumeric: "tabular-nums" }}>
           {value}{unit}
         </span>
       </div>
@@ -27,7 +27,7 @@ export function Slider({
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: "100%", accentColor: "#3B82F6", height: 3, cursor: "pointer" }}
+        style={{ width: "100%", accentColor: "#A855F7", height: 3, cursor: "pointer" }}
       />
     </div>
   );

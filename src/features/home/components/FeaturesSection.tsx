@@ -4,10 +4,10 @@ export function FeaturesSection() {
   return (
     <section style={{ maxWidth: 1200, margin: "0 auto", padding: "0 40px 120px" }}>
       <div className="text-center mb-16">
-        <h2 style={{ fontSize: 36, fontWeight: 800, color: "#1E293B", letterSpacing: "-1px", marginBottom: 12 }}>
+        <h2 style={{ fontSize: 36, fontWeight: 800, color: "#F5F3FF", letterSpacing: "-1px", marginBottom: 12 }}>
           Everything you need to colorize animations
         </h2>
-        <p style={{ fontSize: 16, color: "#64748B", maxWidth: 500, margin: "0 auto" }}>
+        <p style={{ fontSize: 16, color: "#AAB2D5", maxWidth: 500, margin: "0 auto" }}>
           Professional-grade tools combined with cutting-edge AI to make your workflow faster than ever.
         </p>
       </div>
@@ -17,9 +17,18 @@ export function FeaturesSection() {
           <div
             key={idx}
             style={{
-              background: "white", borderRadius: 20, padding: 32,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-              border: "1px solid rgba(0,0,0,0.04)",
+              background: "#181827", borderRadius: 20, padding: 32,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              border: "1px solid #2A2A40",
+              transition: "all 0.2s ease-out",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,46,154,0.3)";
+              e.currentTarget.style.boxShadow = "0 0 20px rgba(255,46,154,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#2A2A40";
+              e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.15)";
             }}
           >
             <div
@@ -32,10 +41,10 @@ export function FeaturesSection() {
             >
               {feature.icon}
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1E293B", marginBottom: 10 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F5F3FF", marginBottom: 10 }}>
               {feature.title}
             </h3>
-            <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+            <p style={{ fontSize: 14, color: "#AAB2D5", lineHeight: 1.7 }}>
               {feature.description}
             </p>
           </div>

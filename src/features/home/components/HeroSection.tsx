@@ -11,26 +11,26 @@ export function HeroSection() {
         <div>
           <div
             className="inline-flex items-center gap-2 mb-6"
-            style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 100, padding: "6px 16px" }}
+            style={{ background: "rgba(124,58,237,0.15)", border: "1px solid #7C3AED", borderRadius: 100, padding: "6px 16px" }}
           >
-            <Sparkles size={14} color="#3B82F6" />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#3B82F6" }}>Powered by AI</span>
+            <Sparkles size={14} color="#A855F7" />
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#A855F7" }}>Powered by AI</span>
           </div>
 
           <h1
             style={{
               fontSize: 52, fontWeight: 800, lineHeight: 1.1,
-              color: "#1E293B", marginBottom: 24, letterSpacing: "-1.5px",
+              color: "#F5F3FF", marginBottom: 24, letterSpacing: "-1.5px",
             }}
           >
             AI-Powered
             <br />
-            <span style={{ color: "#3B82F6" }}>Animation</span>
+            <span style={{ background: "linear-gradient(135deg, #7C3AED 0%, #FF2E9A 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Animation</span>
             <br />
             Coloring
           </h1>
 
-          <p style={{ fontSize: 18, color: "#475569", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
+          <p style={{ fontSize: 18, color: "#AAB2D5", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
             Color entire frame sequences in seconds using AI.
             <br />
             Edit manually when needed.
@@ -41,10 +41,10 @@ export function HeroSection() {
               to="/signup"
               className="flex items-center gap-2"
               style={{
-                background: "#3B82F6", color: "white",
+                background: "linear-gradient(135deg, #7C3AED 0%, #A855F7 25%, #FF2E9A 75%, #FF8A34 100%)", color: "white",
                 padding: "14px 28px", borderRadius: 12,
                 fontWeight: 700, fontSize: 15, textDecoration: "none",
-                boxShadow: "0 8px 24px rgba(59,130,246,0.35)",
+                boxShadow: "0 8px 30px rgba(168,85,247,0.35)",
               }}
             >
               <Zap size={16} fill="white" />
@@ -53,14 +53,14 @@ export function HeroSection() {
             <button
               className="flex items-center gap-2"
               style={{
-                background: "white", color: "#1E293B",
+                background: "#161622", color: "#FFFFFF",
                 padding: "14px 28px", borderRadius: 12,
                 fontWeight: 600, fontSize: 15,
-                border: "1.5px solid #E2E8F0", cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                border: "1.5px solid #2B2B45", cursor: "pointer",
+                boxShadow: "0 0 16px rgba(255,46,154,0.2)",
               }}
             >
-              <Play size={16} color="#3B82F6" fill="#3B82F6" />
+              <Play size={16} color="#FF2E9A" fill="#FF2E9A" />
               Watch Demo
             </button>
           </div>
@@ -68,8 +68,8 @@ export function HeroSection() {
           <div className="flex items-center gap-6 mt-8">
             {HERO_TRUST_BADGES.map((text) => (
               <div key={text} className="flex items-center gap-1.5">
-                <Check size={14} color="#10B981" strokeWidth={2.5} />
-                <span style={{ fontSize: 13, color: "#64748B" }}>{text}</span>
+               <Check size={14} color="#00D084" strokeWidth={2.5} />
+                <span style={{ fontSize: 13, color: "#AAB2D5" }}>{text}</span>
               </div>
             ))}
           </div>
@@ -80,13 +80,13 @@ export function HeroSection() {
           <div
             style={{
               borderRadius: 24, overflow: "hidden",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.12)",
-              border: "1px solid rgba(255,255,255,0.8)",
-              background: "#1E293B",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.3)",
+              border: "1px solid rgba(255,46,154,0.2)",
+              background: "#181827",
             }}
           >
             {/* Mock titlebar */}
-            <div style={{ background: "#0F172A", padding: "12px 16px", display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ background: "#11111B", padding: "12px 16px", display: "flex", gap: 6, alignItems: "center" }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#EF4444" }} />
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#F59E0B" }} />
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#22C55E" }} />
@@ -100,15 +100,15 @@ export function HeroSection() {
             />
 
             {/* Mock toolbar overlay */}
-            <div style={{ background: "#0F172A", padding: "12px 16px", display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ background: "#11111B", padding: "12px 16px", display: "flex", gap: 8, alignItems: "center" }}>
               <div style={{ display: "flex", gap: 6 }}>
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
                     style={{
                       width: 44, height: 44, borderRadius: 8,
-                      background: i === 2 ? "#3B82F6" : "#1E293B",
-                      border: i === 2 ? "2px solid #60A5FA" : "1px solid #334155",
+                      background: i === 2 ? "linear-gradient(135deg, #7C3AED 0%, #FF2E9A 100%)" : "#161622",
+                      border: i === 2 ? "2px solid #FF2E9A" : "1px solid #2A2A40",
                       overflow: "hidden",
                     }}
                   >
@@ -117,11 +117,11 @@ export function HeroSection() {
                 ))}
               </div>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <div style={{ background: "#3B82F6", borderRadius: 8, padding: "6px 12px" }}>
+                <div style={{ background: "linear-gradient(135deg, #7C3AED 0%, #FF2E9A 100%)", borderRadius: 8, padding: "6px 12px" }}>
                   <span style={{ fontSize: 11, color: "white", fontWeight: 600 }}>AI Color</span>
                 </div>
-                <div style={{ background: "#334155", borderRadius: 8, padding: "6px 12px" }}>
-                  <span style={{ fontSize: 11, color: "#94A3B8" }}>Export</span>
+                <div style={{ background: "#2B2B45", borderRadius: 8, padding: "6px 12px" }}>
+                  <span style={{ fontSize: 11, color: "#AAB2D5" }}>Export</span>
                 </div>
               </div>
             </div>
@@ -131,25 +131,27 @@ export function HeroSection() {
           <div
             style={{
               position: "absolute", top: -16, right: -16,
-              background: "white", borderRadius: 16, padding: "12px 16px",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+              background: "#181827", borderRadius: 16, padding: "12px 16px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+              border: "1px solid #2A2A40",
               display: "flex", alignItems: "center", gap: 8,
             }}
           >
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>120 frames colored</span>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00D084" }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#F5F3FF" }}>120 frames colored</span>
           </div>
 
           <div
             style={{
               position: "absolute", bottom: -16, left: -16,
-              background: "white", borderRadius: 16, padding: "12px 16px",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+              background: "#181827", borderRadius: 16, padding: "12px 16px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+              border: "1px solid #2A2A40",
               display: "flex", alignItems: "center", gap: 8,
             }}
           >
-            <Sparkles size={16} color="#8B5CF6" />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>AI Strength: High</span>
+            <Sparkles size={16} color="#A855F7" />
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#F5F3FF" }}>AI Strength: High</span>
           </div>
         </div>
       </div>

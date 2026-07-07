@@ -51,18 +51,18 @@ export function RightPanel({ ctx }: RightPanelProps) {
   };
 
   return (
-    <aside style={{ width: 298, minWidth: 298, background: "#FAFBFC", borderLeft: "1px solid #E2E8F0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <aside style={{ width: 298, minWidth: 298, background: "#16172e", borderLeft: "1px solid #2A2A40", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "thin" }}>
 
         {/* ── TOOLS PANEL ─────────────────────────────── */}
-        <div style={{ borderBottom: "1px solid #F1F5F9" }}>
+        <div style={{ borderBottom: "1px solid #2A2A40" }}>
           <button onClick={() => togglePanel("tools")} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Brush size={12} color="#8B5CF6" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#1E293B" }}>Tools</span>
-              <span style={{ fontSize: 9, color: "#8B5CF6", background: "#F3F0FF", padding: "1px 6px", borderRadius: 4, textTransform: "capitalize" }}>{activeTool}</span>
+              <Brush size={12} color="#A855F7" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#F5F3FF" }}>Tools</span>
+              <span style={{ fontSize: 9, color: "#A855F7", background: "rgba(168,85,247,0.15)", padding: "1px 6px", borderRadius: 4, textTransform: "capitalize", border: "1px solid rgba(168,85,247,0.3)" }}>{activeTool}</span>
             </div>
-            {panelOpen.tools ? <ChevronUp size={12} color="#94A3B8" /> : <ChevronDown size={12} color="#94A3B8" />}
+            {panelOpen.tools ? <ChevronUp size={12} color="#7E86A4" /> : <ChevronDown size={12} color="#7E86A4" />}
           </button>
 
           {panelOpen.tools && (
@@ -75,12 +75,12 @@ export function RightPanel({ ctx }: RightPanelProps) {
                     title={`${t.label} (${t.shortcut})`}
                     style={{
                       padding: "8px 3px", borderRadius: 8,
-                      border: activeTool === t.id ? "none" : "1.5px solid #E2E8F0",
-                      background: activeTool === t.id ? "#EFF6FF" : "white",
+                      border: activeTool === t.id ? "none" : "1.5px solid #2A2A40",
+                      background: activeTool === t.id ? "rgba(255,46,154,0.15)" : "#181827",
                       cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-                      color: activeTool === t.id ? "#3B82F6" : "#64748B",
+                      color: activeTool === t.id ? "#FF2E9A" : "#AAB2D5",
                       transition: "all 0.1s",
-                      boxShadow: activeTool === t.id ? "0 0 0 2px rgba(59,130,246,0.2)" : "none",
+                      boxShadow: activeTool === t.id ? "0 0 0 2px rgba(255,46,154,0.3)" : "none",
                       position: "relative",
                     }}
                   >
@@ -135,7 +135,7 @@ export function RightPanel({ ctx }: RightPanelProps) {
           <button onClick={() => togglePanel("color")} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Palette size={12} color="#F59E0B" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#1E293B" }}>Color</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#FFFFFF" }}>Color</span>
               <div style={{ position: "relative", width: 28, height: 20 }}>
                 <div style={{ position: "absolute", bottom: 0, right: 0, width: 16, height: 16, borderRadius: 3, background: secondaryColor, border: "1.5px solid white" }} />
                 <div style={{ position: "absolute", top: 0, left: 0, width: 18, height: 18, borderRadius: 4, background: activeColor, border: "1.5px solid white", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
@@ -208,7 +208,7 @@ export function RightPanel({ ctx }: RightPanelProps) {
           <button onClick={() => togglePanel("brush")} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Sliders size={12} color="#22D3EE" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#1E293B" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#FFFFFF" }}>
                 {activeTool === "fill" ? "Fill Settings" : "Stroke Settings"}
               </span>
               <span style={{ fontSize: 9, color: "#64748B", background: "#F1F5F9", padding: "1px 5px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 0.5 }}>
@@ -379,7 +379,7 @@ export function RightPanel({ ctx }: RightPanelProps) {
           <button onClick={() => togglePanel("adjust")} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Contrast size={12} color="#F59E0B" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#1E293B" }}>Image Adjustments</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#FFFFFF" }}>Image Adjustments</span>
             </div>
             {panelOpen.adjust ? <ChevronUp size={12} color="#94A3B8" /> : <ChevronDown size={12} color="#94A3B8" />}
           </button>
@@ -398,7 +398,7 @@ export function RightPanel({ ctx }: RightPanelProps) {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       {icon}
-                      <span style={{ fontSize: 11, color: "#374151", fontWeight: 500 }}>{label}</span>
+                      <span style={{ fontSize: 11, color: "#FFFFFF", fontWeight: 500 }}>{label}</span>
                     </div>
                     <span style={{ fontSize: 9, color: "#94A3B8", fontVariantNumeric: "tabular-nums" }}>{val}%</span>
                   </div>
